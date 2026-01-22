@@ -87,7 +87,7 @@ jobs:
     - name: Copy compose.yml to droplet
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/private_key
+        echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/private_key
         chmod 600 ~/.ssh/private_key
 
         scp -o StrictHostKeyChecking=no \
