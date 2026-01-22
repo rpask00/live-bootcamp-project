@@ -73,7 +73,7 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo "${{ secrets.DO_HOST }} $(ssh-keyscan ${{ secrets.DO_HOST }} 2>/dev/null)" >> ~/.ssh/known_hosts
+        echo "${{ vars.DO_HOST }} $(ssh-keyscan ${{ vars.DO_HOST }} 2>/dev/null)" >> ~/.ssh/known_hosts
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -92,7 +92,7 @@ jobs:
 
         scp -o StrictHostKeyChecking=no \
             -i ~/.ssh/private_key \
-            compose.yml root@${{ secrets.DO_HOST }}:~
+            compose.yml root@${{ vars.DO_HOST }}:~
         
         rm -f ~/.ssh/private_key
 
