@@ -92,7 +92,7 @@ jobs:
 
         scp -o StrictHostKeyChecking=no \
             -i ~/.ssh/private_key \
-            compose.yml root@${{ vars.DO_HOST }}:~
+            compose.yml root@${{ secrets.DO_HOST }}:~
         
         rm -f ~/.ssh/private_key
 
