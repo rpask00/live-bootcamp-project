@@ -1,3 +1,4 @@
+use crate::app_state::AppState;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -8,7 +9,10 @@ use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
+pub mod app_state;
+pub mod domain;
 pub mod routes;
+pub mod services;
 
 pub struct Application {
     server: Serve<TcpListener, Router, Router>,
@@ -16,7 +20,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
+    pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
         let assets_dir = ServeDir::new("assets");
         let router = Router::new()
             .fallback_service(assets_dir)
@@ -24,7 +28,8 @@ impl Application {
             .route("/login", post(routes::login))
             .route("/logout", post(routes::logout))
             .route("/verify_2fa", post(routes::verify_2fa))
-            .route("/verify_token", post(routes::verify_token));
+            .route("/verify_token", post(routes::verify_token))
+            .with_state(app_state);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
@@ -40,4 +45,3 @@ impl Application {
         self.server.await
     }
 }
-
