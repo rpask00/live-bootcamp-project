@@ -1,8 +1,8 @@
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct User {
-    pub(crate) email: String,
-    pub(crate) password: String,
-    pub(crate) requires_2fa: bool,
+pub struct User {
+    pub email: String,
+    pub password: String,
+    pub requires_2fa: bool,
 }
 
 impl User {

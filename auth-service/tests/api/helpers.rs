@@ -1,6 +1,6 @@
+use auth_service::app_state::{AppState, UserStoreType};
 use auth_service::Application;
 use uuid::Uuid;
-use auth_service::app_state::{AppState, UserStoreType};
 
 pub struct TestApp {
     pub address: String,
