@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::domain::data_stores::{UserStore, UserStoreError};
+use crate::domain::data_stores::UserStoreError;
 use crate::domain::error::AuthAPIError;
 use crate::domain::user::User;
 use axum::extract::State;
@@ -21,7 +21,6 @@ pub async fn signup(
         UserStoreError::InvalidCredentials => AuthAPIError::InvalidCredentials,
         _ => AuthAPIError::UnexpectedError,
     })?;
-
     let response = Json(SignupResponse {
         message: "User signed up successfully".into(),
     });
