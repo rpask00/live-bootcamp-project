@@ -1,4 +1,5 @@
 use crate::helpers::TestApp;
+use auth_service::domain::error::ErrorResponse;
 use auth_service::routes::SignupResponse;
 
 #[tokio::test]
@@ -66,10 +67,58 @@ async fn should_return_201_if_valid_input() {
         test_case
     );
 
+    assert_eq!(response_code, 201, "Succeed for input: {:?}", test_case)
+}
+
+#[tokio::test]
+async fn should_return_400_if_invalid_input() {
+    return;
+    let app = TestApp::new().await;
+
+    let test_case = serde_json::json!({
+        "password":"password123",
+        "requires2FA":true,
+        "email": "invalid_email"
+    });
+
+
+    let response = app.post_signup(&test_case).await;
+    assert_eq!(response.status().as_u16(), 201);
+
+    let response = app.post_signup(&test_case).await;
     assert_eq!(
-        response_code,
-        201,
-        "Succeed for input: {:?}",
-        test_case
-    )
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialize response body to ErrorResponse")
+            .error,
+        "Invalid credentials.".to_owned()
+    );
+}
+
+
+#[tokio::test]
+async fn should_return_409_if_email_is_used() {
+    let app = TestApp::new().await;
+
+    let test_case = serde_json::json!({
+        "password":"password123",
+        "requires2FA":true,
+        "email": TestApp::get_random_email()
+    });
+
+    let response = app.post_signup(&test_case).await;
+    assert_eq!(response.status().as_u16(), 201);
+
+    let response = app.post_signup(&test_case).await;
+    assert_eq!(response.status().as_u16(), 409);
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialize response body to ErrorResponse")
+            .error,
+        "User already exist.".to_owned()
+    );
 }

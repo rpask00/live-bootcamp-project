@@ -1,14 +1,6 @@
+use crate::domain::data_stores::{UserStore, UserStoreError};
 use crate::domain::user::User;
 use std::collections::HashMap;
-
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
-
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
 // which stores a `HashMap`` of email `String`s mapped to `User` objects.
 // Derive the `Default` trait for `HashmapUserStore`.
@@ -19,7 +11,14 @@ pub struct HashmapUserStore {
 }
 
 impl HashmapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+    pub fn test() -> () {
+        println!("test");
+    }
+}
+
+#[async_trait::async_trait]
+impl UserStore for HashmapUserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         // Return `UserStoreError::UserAlreadyExists` if the user already exists,
         // otherwise insert the user into the hashmap and return `Ok(())`.
 
@@ -37,9 +36,11 @@ impl HashmapUserStore {
     // This function should return a `Result` type containing either a
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
-    pub fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+    async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
         self.users.get(email).ok_or(UserStoreError::UserNotFound)
     }
+
+    
 
     // TODO: Implement a public method called `validate_user`, which takes an
     // immutable reference to self, an email string slice, and a password string slice
@@ -47,7 +48,7 @@ impl HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
 
         if user.password != password {
@@ -68,10 +69,10 @@ mod tests {
         let mut store = HashmapUserStore::default();
 
         let user = User::new("test@test.pl".into(), "test".into(), false);
-        let result = store.add_user(user.clone());
+        let result = store.add_user(user.clone()).await;
         assert_eq!(result.unwrap(), (), "User should be added successfully");
 
-        let result = store.add_user(user.clone());
+        let result = store.add_user(user.clone()).await;
 
         assert_eq!(
             result.expect_err("Result should be error"),
@@ -86,7 +87,7 @@ mod tests {
         let user = User::new("test@test.pl".into(), "test".into(), false);
         store.add_user(user.clone());
 
-        let _user = store.get_user(&user.email);
+        let _user = store.get_user(&user.email).await;
 
         assert_eq!(
             _user.is_err(),
@@ -103,14 +104,14 @@ mod tests {
     async fn test_validate_user() {
         let mut store = HashmapUserStore::default();
         let user = User::new("test@test.pl".into(), "test".into(), false);
-        store.add_user(user.clone()).unwrap();
+        store.add_user(user.clone()).await.unwrap();
 
         // Successful validation
-        let res = store.validate_user(&user.email, "test");
+        let res = store.validate_user(&user.email, "test").await;
         assert_eq!(res.unwrap(), (), "Valid credentials should return Ok(())");
 
         // Invalid password
-        let res = store.validate_user(&user.email, "wrong_password");
+        let res = store.validate_user(&user.email, "wrong_password").await;
         assert_eq!(
             res.expect_err("Result should be error"),
             UserStoreError::InvalidCredentials,
@@ -118,7 +119,7 @@ mod tests {
         );
 
         // Non-existent user
-        let res = store.validate_user("noone@example.com", "whatever");
+        let res = store.validate_user("noone@example.com", "whatever").await;
         assert_eq!(
             res.expect_err("Result should be error"),
             UserStoreError::UserNotFound,
