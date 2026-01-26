@@ -85,7 +85,7 @@ mod tests {
     async fn test_get_user() {
         let mut store = HashmapUserStore::default();
         let user = User::new("test@test.pl".into(), "test".into(), false);
-        store.add_user(user.clone());
+        store.add_user(user.clone()).await.unwrap();
 
         let _user = store.get_user(&user.email).await;
 
