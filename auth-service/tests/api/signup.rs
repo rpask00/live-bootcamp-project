@@ -81,7 +81,6 @@ async fn should_return_400_if_invalid_input() {
         "email": "invalid_email"
     });
 
-
     let response = app.post_signup(&test_case).await;
     assert_eq!(response.status().as_u16(), 201);
 
@@ -96,6 +95,27 @@ async fn should_return_400_if_invalid_input() {
     );
 }
 
+#[tokio::test]
+async fn should_return_400_if_invalid_properties() {
+    let app = TestApp::new().await;
+
+    let test_case = serde_json::json!({
+        "password":"password123",
+        "requires2FA": true,
+        "email": "invalid_email"
+    });
+
+    let response = app.post_signup(&test_case).await;
+    assert_eq!(response.status().as_u16(), 400);
+    let test_case = serde_json::json!({
+        "password":"abc",
+        "requires2FA": true,
+        "email": "valid_email@example.com"
+    });
+
+    let response = app.post_signup(&test_case).await;
+    assert_eq!(response.status().as_u16(), 400);
+}
 
 #[tokio::test]
 async fn should_return_409_if_email_is_used() {

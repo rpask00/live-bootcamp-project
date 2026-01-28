@@ -1,4 +1,6 @@
 use crate::domain::data_stores::{UserStore, UserStoreError};
+use crate::domain::email::Email;
+use crate::domain::password::Password;
 use crate::domain::user::User;
 use std::collections::HashMap;
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
@@ -7,12 +9,12 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct HashmapUserStore {
-    users: HashMap<String, User>,
+    users: HashMap<Email, User>,
 }
 
 impl HashmapUserStore {
     pub fn test() -> () {
-        println!("test");
+        println!("testPassword123");
     }
 }
 
@@ -36,11 +38,9 @@ impl UserStore for HashmapUserStore {
     // This function should return a `Result` type containing either a
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
-    async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<&User, UserStoreError> {
         self.users.get(email).ok_or(UserStoreError::UserNotFound)
     }
-
-    
 
     // TODO: Implement a public method called `validate_user`, which takes an
     // immutable reference to self, an email string slice, and a password string slice
@@ -48,10 +48,14 @@ impl UserStore for HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(
+        &self,
+        email: &Email,
+        password: &Password,
+    ) -> Result<(), UserStoreError> {
         let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
 
-        if user.password != password {
+        if user.password != *password {
             return Err(UserStoreError::InvalidCredentials);
         };
 
@@ -68,7 +72,11 @@ mod tests {
     async fn test_add_user() {
         let mut store = HashmapUserStore::default();
 
-        let user = User::new("test@test.pl".into(), "test".into(), false);
+        let user = User::new(
+            "test@test.pl".try_into().unwrap(),
+            "testPassword123".try_into().unwrap(),
+            false,
+        );
         let result = store.add_user(user.clone()).await;
         assert_eq!(result.unwrap(), (), "User should be added successfully");
 
@@ -84,7 +92,11 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut store = HashmapUserStore::default();
-        let user = User::new("test@test.pl".into(), "test".into(), false);
+        let user = User::new(
+            "test@test.pl".try_into().unwrap(),
+            "testPassword123".try_into().unwrap(),
+            false,
+        );
         store.add_user(user.clone()).await.unwrap();
 
         let _user = store.get_user(&user.email).await;
@@ -103,15 +115,23 @@ mod tests {
     #[tokio::test]
     async fn test_validate_user() {
         let mut store = HashmapUserStore::default();
-        let user = User::new("test@test.pl".into(), "test".into(), false);
+        let user = User::new(
+            "test@test.pl".try_into().unwrap(),
+            "testPassword123".try_into().unwrap(),
+            false,
+        );
         store.add_user(user.clone()).await.unwrap();
 
         // Successful validation
-        let res = store.validate_user(&user.email, "test").await;
+        let res = store
+            .validate_user(&user.email, &"testPassword123".try_into().unwrap())
+            .await;
         assert_eq!(res.unwrap(), (), "Valid credentials should return Ok(())");
 
         // Invalid password
-        let res = store.validate_user(&user.email, "wrong_password").await;
+        let res = store
+            .validate_user(&user.email, &"wrong_password".try_into().unwrap())
+            .await;
         assert_eq!(
             res.expect_err("Result should be error"),
             UserStoreError::InvalidCredentials,
@@ -119,7 +139,12 @@ mod tests {
         );
 
         // Non-existent user
-        let res = store.validate_user("noone@example.com", "whatever").await;
+        let res = store
+            .validate_user(
+                &"noone@example.com".try_into().unwrap(),
+                &"whatever".try_into().unwrap(),
+            )
+            .await;
         assert_eq!(
             res.expect_err("Result should be error"),
             UserStoreError::UserNotFound,

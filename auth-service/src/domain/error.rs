@@ -9,6 +9,7 @@ pub enum AuthAPIError {
     UnexpectedError,
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
