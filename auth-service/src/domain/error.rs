@@ -7,8 +7,8 @@ pub enum AuthAPIError {
     UserAlreadyExists,
     InvalidCredentials,
     UnexpectedError,
+    IncorrectCredentials,
 }
-
 
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
@@ -21,11 +21,10 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exist."),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials."),
             AuthAPIError::UnexpectedError => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error."),
+            AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized."),
         };
 
-        let body = Json(ErrorResponse {
-            error: error_message.to_string(),
-        });
+        let body = Json(ErrorResponse { error: error_message.to_string() });
 
         return (status, body).into_response();
     }
