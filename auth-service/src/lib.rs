@@ -2,8 +2,11 @@ use crate::app_state::AppState;
 use axum::routing::post;
 use axum::serve::Serve;
 use axum::Router;
+use dotenv::dotenv;
+use reqwest::Method;
 use std::error::Error;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 pub mod app_state;
@@ -19,7 +22,22 @@ pub struct Application {
 
 impl Application {
     pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
+        dotenv().ok();
+
         let assets_dir = ServeDir::new("assets");
+
+        let do_host = std::env::var("DO_HOST").expect("DO_HOST must be set");
+
+        let allowed_origins = [
+            "http://localhost:8000".parse()?,
+            format!("http://{}", { do_host }).parse()?,
+        ];
+
+        let cors_layer = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST])
+            .allow_origin(allowed_origins)
+            .allow_credentials(true);
+
         let router = Router::new()
             .fallback_service(assets_dir)
             .route("/signup", post(routes::signup))
@@ -27,7 +45,8 @@ impl Application {
             .route("/logout", post(routes::logout))
             .route("/verify_2fa", post(routes::verify_2fa))
             .route("/verify_token", post(routes::verify_token))
-            .with_state(app_state);
+            .with_state(app_state)
+            .layer(cors_layer);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
