@@ -28,10 +28,10 @@ mod tests {
     #[tokio::test]
     async fn test_ban_token() {
         let mut store = HashsetBannedTokenStore::default();
-        let token = generate_auth_cookie(&Email::parse("test@test.pl".to_string()).unwrap()).unwrap();
-        store.ban_token(&token).await;
+        let jwt = generate_auth_cookie(&Email::parse("test@test.pl".to_string()).unwrap()).unwrap();
+        store.ban_token(&jwt).await;
 
-        let is_banned = store.is_token_banned(&token).await;
+        let is_banned = store.is_token_banned(&jwt).await;
 
         assert!(is_banned);
     }

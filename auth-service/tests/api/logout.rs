@@ -34,14 +34,14 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let fake_email = Email::parse(TestApp::get_random_email()).unwrap();
 
-    let token = generate_auth_cookie(&fake_email).expect("Failed to generate auth cookie");
+    let jwt = generate_auth_cookie(&fake_email).expect("Failed to generate auth cookie");
 
     // add invalid cookie
     app.cookie_jar.add_cookie_str(
         &format!(
             "{}={}; HttpOnly; SameSite=Lax; Secure; Path=/",
             JWT_COOKIE_NAME,
-            token.value()
+            jwt.value()
         ),
         &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
     );
@@ -52,7 +52,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let banned_token_store = app.banned_token_store.read().await;
 
-    assert!(banned_token_store.is_token_banned(&token).await)
+    assert!(banned_token_store.is_token_banned(&jwt).await)
 }
 
 #[tokio::test]
@@ -60,14 +60,14 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
     let app = TestApp::new().await;
     let fake_email = Email::parse(TestApp::get_random_email()).unwrap();
 
-    let token = generate_auth_cookie(&fake_email).expect("Failed to generate auth cookie");
+    let jwt = generate_auth_cookie(&fake_email).expect("Failed to generate auth cookie");
 
     // add invalid cookie
     app.cookie_jar.add_cookie_str(
         &format!(
             "{}={}; HttpOnly; SameSite=Lax; Secure; Path=/",
             JWT_COOKIE_NAME,
-            token.value()
+            jwt.value()
         ),
         &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
     );

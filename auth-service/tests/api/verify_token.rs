@@ -20,12 +20,12 @@ async fn should_return_422_if_malformed_input() {
 async fn should_return_200_valid_token() {
     let app = TestApp::new().await;
 
-    let token = generate_auth_cookie(&Email::parse(TestApp::get_random_email()).unwrap())
+    let jwt = generate_auth_cookie(&Email::parse(TestApp::get_random_email()).unwrap())
         .expect("Failed to generate auth cookie");
 
     let response = app
         .post_verify_token(&json!({
-            "token": token.value()
+            "token": jwt.value()
         }))
         .await;
 
