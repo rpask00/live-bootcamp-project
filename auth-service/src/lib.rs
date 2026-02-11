@@ -26,11 +26,11 @@ impl Application {
 
         let assets_dir = ServeDir::new("assets");
 
-        let do_host = std::env::var("DO_HOST").expect("DO_HOST must be set");
+        let auth_service_ip = std::env::var("AUTH_SERVICE_IP").expect("AUTH_SERVICE_IP must be set");
 
         let allowed_origins = [
             "http://localhost:8000".parse()?,
-            format!("http://{}", { do_host }).parse()?,
+            format!("http://{}", { auth_service_ip }).parse()?,
         ];
 
         let cors_layer = CorsLayer::new()
