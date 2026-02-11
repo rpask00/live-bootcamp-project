@@ -81,6 +81,18 @@ impl TestApp {
             .expect("Failed to execute request (logout).")
     }
 
+    pub async fn post_verify_token<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(format!("{}/verify_token", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub fn get_random_email() -> String {
         format!("{}@example.com", Uuid::new_v4())
     }
