@@ -1,5 +1,6 @@
 use auth_service::app_state::AppState;
 use auth_service::services::hashmap_user_store::HashmapUserStore;
+use auth_service::utils::constants::test;
 use auth_service::Application;
 use reqwest::cookie::Jar;
 use std::sync::Arc;
@@ -20,7 +21,7 @@ impl TestApp {
 
         let cookie_jar = Arc::new(Jar::default());
 
-        let app = Application::build(app_state, "127.0.0.1:0")
+        let app = Application::build(app_state, test::APP_ADDRESS)
             .await
             .expect("Failed to build app");
 
