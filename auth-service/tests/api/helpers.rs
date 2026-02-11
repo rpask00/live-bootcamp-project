@@ -1,5 +1,6 @@
-use auth_service::app_state::AppState;
+use auth_service::app_state::{AppState, BannedTokenStoreType};
 use auth_service::services::hashmap_user_store::HashmapUserStore;
+use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
 use auth_service::utils::constants::test;
 use auth_service::Application;
 use reqwest::cookie::Jar;
@@ -11,13 +12,15 @@ pub struct TestApp {
     pub address: String,
     pub http_client: reqwest::Client,
     pub cookie_jar: Arc<Jar>,
+    pub banned_token_store: BannedTokenStoreType,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
 
-        let app_state = AppState::new(user_store);
+        let app_state = AppState::new(user_store, banned_token_store.clone());
 
         let cookie_jar = Arc::new(Jar::default());
 
@@ -38,6 +41,7 @@ impl TestApp {
             address,
             http_client,
             cookie_jar,
+            banned_token_store: banned_token_store.clone(),
         }
     }
 
