@@ -26,12 +26,7 @@ impl Application {
 
         let assets_dir = ServeDir::new("assets");
 
-        let auth_service_ip = std::env::var("AUTH_SERVICE_IP").expect("AUTH_SERVICE_IP must be set");
-
-        let allowed_origins = [
-            "http://localhost:8000".parse()?,
-            format!("http://{}", { auth_service_ip }).parse()?,
-        ];
+        let allowed_origins = ["http://localhost:8000".parse()?, "http://167.71.36.159:7000".parse()?];
 
         let cors_layer = CorsLayer::new()
             .allow_methods([Method::GET, Method::POST])
