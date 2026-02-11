@@ -73,6 +73,14 @@ impl TestApp {
             .expect("Failed to execute login request.")
     }
 
+    pub async fn post_logout(&self) -> reqwest::Response {
+        self.http_client
+            .post(&format!("{}/logout", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request (logout).")
+    }
+
     pub fn get_random_email() -> String {
         format!("{}@example.com", Uuid::new_v4())
     }
