@@ -24,8 +24,10 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized."),
         };
 
-        let body = Json(ErrorResponse { error: error_message.to_string() });
+        let body = Json(ErrorResponse {
+            error: error_message.to_string(),
+        });
 
-        return (status, body).into_response();
+        (status, body).into_response()
     }
 }

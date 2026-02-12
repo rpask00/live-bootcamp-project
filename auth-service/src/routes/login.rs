@@ -107,7 +107,7 @@ async fn handle_2fa(
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
 
-    return (
+    (
         jar,
         Ok((
             StatusCode::PARTIAL_CONTENT,
@@ -116,12 +116,19 @@ async fn handle_2fa(
                 login_attempt_id: login_attempt_id.as_ref().to_string(),
             })),
         )),
-    );
+    )
 }
 
-async fn handle_no_2fa(
+pub async fn handle_no_2fa(
     email: &Email,
     jar: CookieJar,
 ) -> (CookieJar, Result<(StatusCode, Json<LoginResponse>), AuthAPIError>) {
-    (jar, Ok((StatusCode::OK, Json(LoginResponse::RegularAuth))))
+    let cookie = match generate_auth_cookie(&email) {
+        Ok(cookie) => cookie,
+        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+    };
+
+    let updated_jar = jar.add(cookie);
+
+    (updated_jar, Ok((StatusCode::OK, Json(LoginResponse::RegularAuth))))
 }

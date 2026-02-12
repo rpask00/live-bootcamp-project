@@ -3,6 +3,7 @@ use crate::domain::password::Password;
 use crate::domain::user::User;
 use axum_extra::extract::cookie::Cookie;
 use rand::{rng, Rng};
+use serde::Deserialize;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
@@ -45,7 +46,7 @@ pub enum TwoFACodeStoreError {
     UnexpectedError,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
@@ -72,7 +73,7 @@ impl AsRef<str> for LoginAttemptId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {
@@ -89,7 +90,7 @@ impl Default for TwoFACode {
     fn default() -> Self {
         // Use the `rand` crate to generate a random 2FA code.
         // The code should be 6 digits (ex: 834629)
-        TwoFACode(rng().random_range(1_000_000..=9_999_999).to_string())
+        TwoFACode(rng().random_range(100_000..=999_999).to_string())
     }
 }
 
