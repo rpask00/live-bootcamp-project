@@ -3,8 +3,9 @@ use auth_service::services::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
 use auth_service::services::hashmap_user_store::HashmapUserStore;
 use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
 use auth_service::services::mock_email_client::MockEmailClient;
-use auth_service::utils::constants::prod;
-use auth_service::Application;
+use auth_service::utils::constants::{env, prod};
+use auth_service::{get_postgres_pool, Application};
+use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -22,4 +23,18 @@ async fn main() {
         .expect("Failed to build app");
 
     app.run().await.expect("Failed to start app!");
+}
+
+async fn configure_postgresql() -> PgPool {
+    let database_url = std::env::var(env::DATABASE_URL).expect("DATABASE_URL must be set");
+
+    // Create a new database connection pool
+    let pg_pool = get_postgres_pool(&database_url)
+        .await
+        .expect("Failed to create Postgres connection pool!");
+
+    // Run database migrations against our test database!
+    sqlx::migrate!().run(&pg_pool).await.expect("Failed to run migrations");
+
+    pg_pool
 }

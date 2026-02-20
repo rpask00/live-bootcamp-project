@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 
 pub mod env {
     pub const JWT_SECRET_NAME: &str = "JWT_SECRET";
+    pub const DATABASE_URL: &str = "DATABASE_URL";
     pub const JWT_COOKIE_NAME: &str = "jwt";
 }
 

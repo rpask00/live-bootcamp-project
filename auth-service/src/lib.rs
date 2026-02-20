@@ -4,6 +4,8 @@ use axum::serve::Serve;
 use axum::Router;
 use dotenv::dotenv;
 use reqwest::Method;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
 use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -56,4 +58,9 @@ impl Application {
         println!("Listening on {}", &self.address);
         self.server.await
     }
+}
+
+pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {
+    // Create a new PostgreSQL connection pool
+    PgPoolOptions::new().max_connections(5).connect(url).await
 }
