@@ -42,7 +42,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 mod tests {
     use crate::domain::data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError};
     use crate::domain::email::Email;
-    use crate::services::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
+    use crate::services::data_stores::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
     use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
 

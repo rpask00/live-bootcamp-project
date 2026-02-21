@@ -48,11 +48,7 @@ impl UserStore for HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    async fn validate_user(
-        &self,
-        email: &Email,
-        password: &Password,
-    ) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
         let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
 
         if user.password != *password {
@@ -101,11 +97,7 @@ mod tests {
 
         let _user = store.get_user(&user.email).await;
 
-        assert_eq!(
-            _user.is_err(),
-            false,
-            "User should be returned successfully"
-        );
+        assert_eq!(_user.is_err(), false, "User should be returned successfully");
 
         let _user = _user.unwrap();
 

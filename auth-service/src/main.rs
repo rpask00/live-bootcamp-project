@@ -1,7 +1,7 @@
 use auth_service::app_state::AppState;
-use auth_service::services::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
-use auth_service::services::hashmap_user_store::HashmapUserStore;
-use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::services::data_stores::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
+use auth_service::services::data_stores::hashmap_user_store::HashmapUserStore;
+use auth_service::services::data_stores::hashset_banned_token_store::HashsetBannedTokenStore;
 use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::constants::{env, prod};
 use auth_service::{get_postgres_pool, Application};
