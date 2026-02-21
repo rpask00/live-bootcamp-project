@@ -1,6 +1,6 @@
 use crate::domain::data_stores::{UserStore, UserStoreError};
 use crate::domain::email::Email;
-use crate::domain::password::Password;
+use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use std::collections::HashMap;
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
@@ -48,7 +48,7 @@ impl UserStore for HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &Email, password: &HashedPassword) -> Result<(), UserStoreError> {
         let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
 
         if user.password != *password {
