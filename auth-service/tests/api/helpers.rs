@@ -1,10 +1,11 @@
 use auth_service::app_state::{AppState, BannedTokenStoreType, EmailClientType, TwoFACodeStoreType};
 use auth_service::services::data_stores::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
-use auth_service::services::data_stores::hashmap_user_store::HashmapUserStore;
 use auth_service::services::data_stores::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::services::data_stores::postgres_user_store::PostgresUserStore;
 use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::constants::test;
 use auth_service::{get_postgres_pool, Application};
+use dotenv::dotenv;
 use reqwest::cookie::Jar;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Executor, PgPool};
@@ -23,7 +24,10 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let pg_pool = configure_postgresql().await;
+        // let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
+
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient::default()));
@@ -130,6 +134,8 @@ impl TestApp {
 }
 
 async fn configure_postgresql() -> PgPool {
+    dotenv().ok();
+
     let postgresql_conn_url = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set")
         .to_owned();

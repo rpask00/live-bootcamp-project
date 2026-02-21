@@ -19,9 +19,12 @@ pub async fn signup(
         .await
         .map_err(|_| AuthAPIError::InvalidCredentials)?;
 
-    let user = User::new(email, password, request.requires_2fa);
-
     let mut user_store = state.user_store.write().await;
+
+    if user_store.get_user(&email).await.is_ok() {
+        return Err(AuthAPIError::UserAlreadyExists);
+    }
+    let user = User::new(email, password, request.requires_2fa);
 
     user_store.add_user(user).await.map_err(|err| match err {
         UserStoreError::UserAlreadyExists => AuthAPIError::UserAlreadyExists,
