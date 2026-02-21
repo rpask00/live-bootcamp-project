@@ -1,6 +1,5 @@
 use crate::domain::data_stores::{UserStore, UserStoreError};
 use crate::domain::email::Email;
-use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use std::collections::HashMap;
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
@@ -48,14 +47,13 @@ impl UserStore for HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    async fn validate_user(&self, email: &Email, password: &HashedPassword) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &Email, raw_password: &str) -> Result<(), UserStoreError> {
         let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
 
-        if user.password != *password {
-            return Err(UserStoreError::InvalidCredentials);
-        };
-
-        Ok(())
+        user.password
+            .verify_raw_password(raw_password)
+            .await
+            .map_err(|_| UserStoreError::InvalidCredentials)
     }
 }
 
@@ -63,6 +61,7 @@ impl UserStore for HashmapUserStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::hashed_password::HashedPassword;
 
     #[tokio::test]
     async fn test_add_user() {
@@ -70,7 +69,7 @@ mod tests {
 
         let user = User::new(
             "test@test.pl".try_into().unwrap(),
-            "testPassword123".try_into().unwrap(),
+            HashedPassword::parse("testPassword123".into()).await.unwrap(),
             false,
         );
         let result = store.add_user(user.clone()).await;
@@ -90,7 +89,7 @@ mod tests {
         let mut store = HashmapUserStore::default();
         let user = User::new(
             "test@test.pl".try_into().unwrap(),
-            "testPassword123".try_into().unwrap(),
+            HashedPassword::parse("testPassword123".into()).await.unwrap(),
             false,
         );
         store.add_user(user.clone()).await.unwrap();
@@ -109,21 +108,18 @@ mod tests {
         let mut store = HashmapUserStore::default();
         let user = User::new(
             "test@test.pl".try_into().unwrap(),
-            "testPassword123".try_into().unwrap(),
+            HashedPassword::parse("testPassword123".into()).await.unwrap(),
             false,
         );
         store.add_user(user.clone()).await.unwrap();
 
         // Successful validation
-        let res = store
-            .validate_user(&user.email, &"testPassword123".try_into().unwrap())
-            .await;
+        let res = store.validate_user(&user.email, "testPassword123").await;
+
         assert_eq!(res.unwrap(), (), "Valid credentials should return Ok(())");
 
         // Invalid password
-        let res = store
-            .validate_user(&user.email, &"wrong_password".try_into().unwrap())
-            .await;
+        let res = store.validate_user(&user.email, "wrong_password").await;
         assert_eq!(
             res.expect_err("Result should be error"),
             UserStoreError::InvalidCredentials,
@@ -132,10 +128,7 @@ mod tests {
 
         // Non-existent user
         let res = store
-            .validate_user(
-                &"noone@example.com".try_into().unwrap(),
-                &"whatever".try_into().unwrap(),
-            )
+            .validate_user(&"noone@example.com".try_into().unwrap(), "whatever")
             .await;
         assert_eq!(
             res.expect_err("Result should be error"),

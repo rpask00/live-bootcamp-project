@@ -1,5 +1,4 @@
 use crate::domain::email::Email;
-use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use axum_extra::extract::cookie::Cookie;
 use rand::{rng, Rng};
@@ -18,7 +17,7 @@ pub enum UserStoreError {
 pub trait UserStore: Send + Sync {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
     async fn get_user(&self, email: &Email) -> Result<&User, UserStoreError>;
-    async fn validate_user(&self, email: &Email, password: &HashedPassword) -> Result<(), UserStoreError>;
+    async fn validate_user(&self, email: &Email, password: &str) -> Result<(), UserStoreError>;
 }
 
 #[async_trait::async_trait]
