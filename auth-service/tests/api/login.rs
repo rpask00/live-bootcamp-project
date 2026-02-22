@@ -9,7 +9,7 @@ use reqwest::StatusCode;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let body = serde_json::json!({
           "_email": "user@example.com",
@@ -19,11 +19,12 @@ async fn should_return_422_if_malformed_credentials() {
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_bad_request() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let body = serde_json::json!({
           "email": "user_example.com",
@@ -33,11 +34,12 @@ async fn should_return_400_if_bad_request() {
     let response = app.post_login(&body).await;
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let body = serde_json::json!({
           "email": "user@example.com",
           "password": "zaq1@WSX",
@@ -53,12 +55,13 @@ async fn should_return_401_if_incorrect_credentials() {
     });
 
     let response = app.post_login(&body).await;
-    assert_eq!(response.status(), StatusCode::UNAUTHORIZED)
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email: String = SafeEmail().fake();
 
@@ -87,11 +90,12 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email: String = SafeEmail().fake();
 
@@ -125,4 +129,5 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
             .0,
         LoginAttemptId::parse(json_body.login_attempt_id).unwrap()
     );
+    app.clean_up().await;
 }

@@ -4,7 +4,7 @@ use auth_service::routes::SignupResponse;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = TestApp::get_random_email();
 
@@ -29,18 +29,14 @@ async fn should_return_422_if_malformed_input() {
     for test_case in test_cases {
         let response = app.post_signup(&test_case).await;
 
-        assert_eq!(
-            response.status().as_u16(),
-            422,
-            "Failed for input: {:?}",
-            test_case
-        );
+        assert_eq!(response.status().as_u16(), 422, "Failed for input: {:?}", test_case);
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_201_if_valid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = TestApp::get_random_email();
 
@@ -67,13 +63,14 @@ async fn should_return_201_if_valid_input() {
         test_case
     );
 
-    assert_eq!(response_code, 201, "Succeed for input: {:?}", test_case)
+    assert_eq!(response_code, 201, "Succeed for input: {:?}", test_case);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
     return;
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_case = serde_json::json!({
         "password":"password123",
@@ -97,7 +94,7 @@ async fn should_return_400_if_invalid_input() {
 
 #[tokio::test]
 async fn should_return_400_if_invalid_properties() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_case = serde_json::json!({
         "password":"password123",
@@ -115,11 +112,12 @@ async fn should_return_400_if_invalid_properties() {
 
     let response = app.post_signup(&test_case).await;
     assert_eq!(response.status().as_u16(), 400);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_409_if_email_is_used() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_case = serde_json::json!({
         "password":"password123",
@@ -141,4 +139,5 @@ async fn should_return_409_if_email_is_used() {
             .error,
         "User already exist.".to_owned()
     );
+    app.clean_up().await;
 }
