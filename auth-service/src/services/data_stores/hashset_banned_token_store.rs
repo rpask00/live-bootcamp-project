@@ -1,5 +1,4 @@
-use crate::domain::data_stores::BannedTokenStore;
-use axum_extra::extract::cookie::Cookie;
+use crate::domain::data_stores::{BannedTokenStore, BannedTokenStoreError};
 use std::collections::HashSet;
 
 #[derive(Default)]
@@ -9,12 +8,14 @@ pub struct HashsetBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    async fn ban_token(&mut self, token: &Cookie) -> () {
-        self.banned_tokens.insert(token.value().to_string());
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
+        self.banned_tokens.insert(token);
+
+        Ok(())
     }
 
-    async fn is_token_banned(&self, token: &Cookie) -> bool {
-        self.banned_tokens.contains(token.value())
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
+        Ok(self.banned_tokens.contains(token))
     }
 }
 
@@ -29,9 +30,12 @@ mod tests {
     async fn test_ban_token() {
         let mut store = HashsetBannedTokenStore::default();
         let jwt = generate_auth_cookie(&Email::parse("test@test.pl".to_string()).unwrap()).unwrap();
-        store.ban_token(&jwt).await;
+        store
+            .add_token(jwt.value().to_string())
+            .await
+            .expect("Failed to s add token.");
 
-        let is_banned = store.is_token_banned(&jwt).await;
+        let is_banned = store.contains_token(jwt.value().as_ref()).await.unwrap();
 
         assert!(is_banned);
     }

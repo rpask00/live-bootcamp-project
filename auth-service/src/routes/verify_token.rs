@@ -24,7 +24,15 @@ pub async fn verify_token(
 
     let jwt = Cookie::new(JWT_COOKIE_NAME, request.token);
 
-    if state.banned_token_store.read().await.is_token_banned(&jwt).await {
+    let is_token_banned = state
+        .banned_token_store
+        .read()
+        .await
+        .contains_token(jwt.value().as_ref())
+        .await
+        .map_err(|_| AuthAPIError::UnexpectedError)?;
+
+    if is_token_banned {
         return Ok(StatusCode::UNAUTHORIZED.into_response());
     }
 

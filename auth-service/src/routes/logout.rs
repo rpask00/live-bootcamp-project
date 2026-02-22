@@ -20,7 +20,16 @@ pub async fn logout(
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    state.banned_token_store.write().await.ban_token(&jwt).await;
+    if state
+        .banned_token_store
+        .write()
+        .await
+        .add_token(jwt.value().to_string())
+        .await
+        .is_err()
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    }
 
     let jar = jar.remove(cookie::Cookie::from(JWT_COOKIE_NAME));
 

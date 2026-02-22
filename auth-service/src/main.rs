@@ -3,8 +3,8 @@ use auth_service::services::data_stores::hashmap_two_fa_code_store::HashmapTwoFA
 use auth_service::services::data_stores::hashmap_user_store::HashmapUserStore;
 use auth_service::services::data_stores::hashset_banned_token_store::HashsetBannedTokenStore;
 use auth_service::services::mock_email_client::MockEmailClient;
-use auth_service::utils::constants::{env, prod};
-use auth_service::{get_postgres_pool, Application};
+use auth_service::utils::constants::{env, prod, REDIS_HOST_NAME};
+use auth_service::{get_postgres_pool, get_redis_client, Application};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -37,4 +37,11 @@ async fn configure_postgresql() -> PgPool {
     sqlx::migrate!().run(&pg_pool).await.expect("Failed to run migrations");
 
     pg_pool
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }

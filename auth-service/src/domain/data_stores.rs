@@ -1,6 +1,5 @@
 use crate::domain::email::Email;
 use crate::domain::user::User;
-use axum_extra::extract::cookie::Cookie;
 use rand::{rng, Rng};
 use serde::Deserialize;
 use uuid::Uuid;
@@ -13,6 +12,11 @@ pub enum UserStoreError {
     UnexpectedError,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum BannedTokenStoreError {
+    UnexpectedError,
+}
+
 #[async_trait::async_trait]
 pub trait UserStore: Send + Sync {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
@@ -22,8 +26,8 @@ pub trait UserStore: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait BannedTokenStore: Send + Sync {
-    async fn ban_token(&mut self, token: &Cookie) -> ();
-    async fn is_token_banned(&self, token: &Cookie) -> bool;
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
 
 // This trait represents the interface all concrete 2FA code stores should implement
