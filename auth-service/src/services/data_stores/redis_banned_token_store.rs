@@ -11,8 +11,10 @@ pub struct RedisBannedTokenStore {
 }
 
 impl RedisBannedTokenStore {
-    pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
-        Self { conn }
+    pub fn new(conn: Connection) -> Self {
+        Self {
+            conn: Arc::new(RwLock::new(conn)),
+        }
     }
 }
 
