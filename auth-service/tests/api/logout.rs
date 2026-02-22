@@ -54,7 +54,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let banned_token_store = app.banned_token_store.read().await;
 
-    assert!(banned_token_store.is_token_banned(&jwt).await);
+    assert!(banned_token_store.contains_token(jwt.value().as_ref()).await.unwrap());
     drop(banned_token_store);
 
     app.clean_up().await;

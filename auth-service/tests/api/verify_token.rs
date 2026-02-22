@@ -64,9 +64,20 @@ async fn should_return_401_if_banned_token() {
 
     assert_eq!(response.status().as_u16(), 200);
 
-    app.banned_token_store.write().await.ban_token(&jwt).await;
+    app.banned_token_store
+        .write()
+        .await
+        .add_token(jwt.value().to_owned())
+        .await
+        .unwrap();
 
-    assert!(app.banned_token_store.read().await.is_token_banned(&jwt).await);
+    assert!(app
+        .banned_token_store
+        .read()
+        .await
+        .contains_token(jwt.value().as_ref())
+        .await
+        .unwrap());
 
     let response = app
         .post_verify_token(&json!({
