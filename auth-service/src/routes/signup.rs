@@ -10,6 +10,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
+#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
