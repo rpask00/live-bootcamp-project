@@ -16,7 +16,7 @@ pub mod env {
 }
 
 pub mod prod {
-    pub const APP_ADDRESS: &str = "0.0.0.0:3000";
+    pub const APP_ADDRESS: &str = "0.0.0.0:3001";
 }
 
 pub mod test {

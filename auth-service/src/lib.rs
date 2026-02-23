@@ -1,4 +1,5 @@
 use crate::app_state::AppState;
+use crate::utils::tracing::{make_span_with_request_id, on_request, on_response};
 use axum::routing::post;
 use axum::serve::Serve;
 use axum::Router;
@@ -6,11 +7,12 @@ use dotenv::dotenv;
 use redis::{Client, RedisResult};
 use reqwest::Method;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres};
 use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
+use tower_http::trace::TraceLayer;
 
 pub mod app_state;
 pub mod domain;
@@ -44,7 +46,13 @@ impl Application {
             .route("/verify-2fa", post(routes::verify_2fa))
             .route("/verify_token", post(routes::verify_token))
             .with_state(app_state)
-            .layer(cors_layer);
+            .layer(cors_layer)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(make_span_with_request_id)
+                    .on_request(on_request)
+                    .on_response(on_response),
+            );
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
@@ -56,7 +64,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), std::io::Error> {
-        println!("Listening on {}", &self.address);
+        tracing::info!("listening on {}", &self.address);
         self.server.await
     }
 }

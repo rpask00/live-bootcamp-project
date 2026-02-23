@@ -3,14 +3,16 @@ use auth_service::services::data_stores::hashmap_user_store::HashmapUserStore;
 use auth_service::services::data_stores::redis_banned_token_store::RedisBannedTokenStore;
 use auth_service::services::data_stores::redis_two_fa_code_store::RedisTwoFACodeStore;
 use auth_service::services::mock_email_client::MockEmailClient;
-use auth_service::utils::constants::{env, prod, REDIS_HOST_NAME};
-use auth_service::{get_postgres_pool, get_redis_client, Application};
-use sqlx::PgPool;
+use auth_service::utils::constants::{prod, REDIS_HOST_NAME};
+use auth_service::utils::tracing::init_tracing;
+use auth_service::{get_redis_client, Application};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
+
     let redis_connection = get_redis_client(REDIS_HOST_NAME.to_owned()).expect("Couldn't get Redis connection");
     let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
         redis_connection.get_connection().unwrap(),
@@ -30,20 +32,6 @@ async fn main() {
         .expect("Failed to build app");
 
     app.run().await.expect("Failed to start app!");
-}
-
-async fn configure_postgresql() -> PgPool {
-    let database_url = std::env::var(env::DATABASE_URL).expect("DATABASE_URL must be set");
-
-    // Create a new database connection pool
-    let pg_pool = get_postgres_pool(&database_url)
-        .await
-        .expect("Failed to create Postgres connection pool!");
-
-    // Run database migrations against our test database!
-    sqlx::migrate!().run(&pg_pool).await.expect("Failed to run migrations");
-
-    pg_pool
 }
 
 fn configure_redis() -> redis::Connection {
