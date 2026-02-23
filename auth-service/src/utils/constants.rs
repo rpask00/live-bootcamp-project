@@ -10,7 +10,7 @@ lazy_static! {
 
 pub mod env {
     pub const JWT_SECRET_NAME: &str = "JWT_SECRET";
-    pub const DATABASE_URL: &str = "DATABASE_URL";
+    pub const DATABASE_URL_NAME: &str = "DATABASE_URL";
     pub const JWT_COOKIE_NAME: &str = "jwt";
     pub const REDIS_HOST_NAME_ENV_VAR: &str = "REDIS_HOST_NAME";
 }
