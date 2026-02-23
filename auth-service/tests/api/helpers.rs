@@ -1,7 +1,7 @@
 use auth_service::app_state::{AppState, BannedTokenStoreType, EmailClientType, TwoFACodeStoreType};
-use auth_service::services::data_stores::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
 use auth_service::services::data_stores::postgres_user_store::PostgresUserStore;
 use auth_service::services::data_stores::redis_banned_token_store::RedisBannedTokenStore;
+use auth_service::services::data_stores::redis_two_fa_code_store::RedisTwoFACodeStore;
 use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::utils::constants::{test, REDIS_HOST_NAME};
 use auth_service::{get_postgres_pool, get_redis_client, Application};
@@ -36,7 +36,10 @@ impl TestApp {
             redis_connection.get_connection().unwrap(),
         )));
 
-        let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        // let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(
+            redis_connection.get_connection().unwrap(),
+        )));
         let email_client = Arc::new(RwLock::new(MockEmailClient::default()));
 
         let app_state = AppState::new(
@@ -158,9 +161,7 @@ impl Drop for TestApp {
 async fn configure_postgresql() -> (PgPool, String) {
     dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set")
-        .to_owned();
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set").to_owned();
 
     // We are creating a new database for each test case, and we need to ensure each database has a unique name!
     let db_name = Uuid::new_v4().to_string();
@@ -209,12 +210,9 @@ async fn configure_database(db_conn_string: &str, db_name: &str) {
 async fn delete_database(db_name: &str) {
     dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set")
-        .to_owned();
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set").to_owned();
 
-    let connection_options =
-        PgConnectOptions::from_str(&database_url).expect("Failed to parse PostgreSQL connection string");
+    let connection_options = PgConnectOptions::from_str(&database_url).expect("Failed to parse PostgreSQL connection string");
 
     let mut connection = PgConnection::connect_with(&connection_options)
         .await
