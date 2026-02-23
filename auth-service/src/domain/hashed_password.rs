@@ -42,7 +42,10 @@ impl HashedPassword {
     // Add a verify_raw_password function.
     // To verify the password candidate use
     // Argon2::default().verify_password.
+    #[tracing::instrument(name = "Verify raw password", skip_all)] // New!
     pub async fn verify_raw_password(&self, password_candidate: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let current_span = tracing::Span::current();
+
         let password_hash = self.as_ref().to_owned();
         let password_candidate = password_candidate.to_owned();
 
@@ -54,10 +57,12 @@ impl HashedPassword {
         // Every HashedPassword instance can verify a password_candidate.
 
         tokio::task::spawn_blocking(move || {
-            let expected_password_hash: PasswordHash<'_> = PasswordHash::new(&password_hash)?;
-            return Argon2::default()
-                .verify_password(password_candidate.as_bytes(), &expected_password_hash)
-                .map_err(|e| e.into());
+            current_span.in_scope(|| {
+                let expected_password_hash: PasswordHash<'_> = PasswordHash::new(&password_hash)?;
+                return Argon2::default()
+                    .verify_password(password_candidate.as_bytes(), &expected_password_hash)
+                    .map_err(|e| e.into());
+            })
         })
         .await?
     }
@@ -70,14 +75,19 @@ impl HashedPassword {
 // Hashing is a CPU-intensive operation. To avoid blocking
 // other async tasks, update this function to perform hashing on a
 // separate thread pool using tokio::task::spawn_blocking.
+#[tracing::instrument(name = "Computing password hash", skip_all)] //New!
 async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error + Send + Sync>> {
-    tokio::task::spawn_blocking(move || {
-        let salt: SaltString = SaltString::generate(&mut OsRng);
-        let password_hash = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::new(15000, 2, 1, None)?)
-            .hash_password(password.as_bytes(), &salt)?
-            .to_string();
+    let current_span = tracing::Span::current();
 
-        Ok(password_hash)
+    tokio::task::spawn_blocking(move || {
+        current_span.in_scope(|| {
+            let salt: SaltString = SaltString::generate(&mut OsRng);
+            let password_hash = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::new(15000, 2, 1, None)?)
+                .hash_password(password.as_bytes(), &salt)?
+                .to_string();
+
+            Ok(password_hash)
+        })
     })
     .await?
 }
@@ -129,16 +139,9 @@ mod tests {
         // Arrange - Create a valid Argon2 hash
         let raw_password = "TestPassword123";
         let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None).unwrap(),
-        );
+        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::new(15000, 2, 1, None).unwrap());
 
-        let hash_string = argon2
-            .hash_password(raw_password.as_bytes(), &salt)
-            .unwrap()
-            .to_string();
+        let hash_string = argon2.hash_password(raw_password.as_bytes(), &salt).unwrap().to_string();
 
         // Act
         let hash_password = HashedPassword::parse_password_hash(hash_string.clone()).unwrap();
@@ -153,16 +156,9 @@ mod tests {
     async fn can_verify_raw_password() {
         let raw_password = "TestPassword123";
         let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None).unwrap(),
-        );
+        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::new(15000, 2, 1, None).unwrap());
 
-        let hash_string = argon2
-            .hash_password(raw_password.as_bytes(), &salt)
-            .unwrap()
-            .to_string();
+        let hash_string = argon2.hash_password(raw_password.as_bytes(), &salt).unwrap().to_string();
 
         let hash_password = HashedPassword::parse_password_hash(hash_string.clone()).unwrap();
 

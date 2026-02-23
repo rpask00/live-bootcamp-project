@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub enum AuthAPIError {
     UserAlreadyExists,
     InvalidCredentials,
