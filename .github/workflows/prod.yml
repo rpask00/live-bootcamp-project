@@ -7,10 +7,26 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  SQLX_OFFLINE: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15.2-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.0-alpine
+        ports:
+          - 6379:6379
     steps:
       # Checkout code from the repository
     - name: Checkout code
@@ -41,7 +57,7 @@ jobs:
       working-directory: ./auth-service
       run: |
         export JWT_SECRET=secret
-        export DATABASE_URL=${{ secrets.DATABASE_URL }}
+        export DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
         export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
         cargo build --verbose
         cargo test --verbose
@@ -110,7 +126,6 @@ jobs:
           cd ~
           export AUTH_SERVICE_IP=${{ vars.DO_HOST }}
           export JWT_SECRET=${{ secrets.JWT_SECRET }}
-          export DATABASE_URL=${{ secrets.DATABASE_URL }}
           export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           docker compose down
           docker compose pull
