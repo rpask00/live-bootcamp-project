@@ -108,6 +108,8 @@ jobs:
           cd ~
           export AUTH_SERVICE_IP=${{ vars.DO_HOST }}
           export JWT_SECRET=${{ secrets.JWT_SECRET }}
+          export DATABASE_URL=${{ secrets.DATABASE_URL }}
+          export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           docker compose down
           docker compose pull
           docker compose up -d
