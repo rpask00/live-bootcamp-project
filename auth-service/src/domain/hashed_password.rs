@@ -2,27 +2,26 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
 };
+use color_eyre::eyre::{eyre, Context, Result};
 use std::error::Error;
 use std::future::Future;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct HashedPassword(String); // updated!
+pub struct HashedPassword(String);
 
 impl HashedPassword {
-    // updated!
-
     // TODO:
     // Update the parse function. Note that it's now async.
     // After password validation, hash the password.
     // Using the provided helper function compute_password_hash.
-    pub async fn parse(s: String) -> Result<Self, String> {
+    pub async fn parse(s: String) -> Result<Self> {
         if s.len() < 8 {
-            return Err(String::from("Password is to short"));
+            return Err(eyre!("Password is to short"));
         }
 
         match compute_password_hash(s).await {
             Ok(hashed_password) => Ok(Self(hashed_password)),
-            Err(_) => Err(String::from("Failed to hash password.")),
+            Err(e) => Err(e),
         }
     }
 
@@ -43,7 +42,7 @@ impl HashedPassword {
     // To verify the password candidate use
     // Argon2::default().verify_password.
     #[tracing::instrument(name = "Verify raw password", skip_all)] // New!
-    pub async fn verify_raw_password(&self, password_candidate: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn verify_raw_password(&self, password_candidate: &str) -> Result<()> {
         let current_span = tracing::Span::current();
 
         let password_hash = self.as_ref().to_owned();
@@ -76,7 +75,7 @@ impl HashedPassword {
 // other async tasks, update this function to perform hashing on a
 // separate thread pool using tokio::task::spawn_blocking.
 #[tracing::instrument(name = "Computing password hash", skip_all)] //New!
-async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error + Send + Sync>> {
+async fn compute_password_hash(password: String) -> Result<String> {
     let current_span = tracing::Span::current();
 
     tokio::task::spawn_blocking(move || {
@@ -96,12 +95,12 @@ impl AsRef<str> for HashedPassword {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
-} // updated!
+}
 
 #[cfg(test)]
 mod tests {
     use super::HashedPassword;
-    // updated!
+
     use argon2::{
         // new
         password_hash::{rand_core::OsRng, SaltString},
@@ -116,20 +115,17 @@ mod tests {
     use quickcheck::Gen;
     use rand::SeedableRng;
 
-    // updated!
     #[tokio::test]
     async fn empty_string_is_rejected() {
         let password = "".to_owned();
 
-        // updated!
         assert!(HashedPassword::parse(password).await.is_err());
     }
 
-    // updated!
     #[tokio::test]
     async fn string_less_than_8_characters_is_rejected() {
         let password = "1234567".to_owned();
-        // updated!
+
         assert!(HashedPassword::parse(password).await.is_err());
     }
 
@@ -185,10 +181,9 @@ mod tests {
         }
     }
 
-    // updated!
     #[tokio::test]
     #[quickcheck_macros::quickcheck]
     async fn valid_passwords_are_parsed_successfully(valid_password: ValidPasswordFixture) -> bool {
-        HashedPassword::parse(valid_password.0).await.is_ok() // updated!
+        HashedPassword::parse(valid_password.0).await.is_ok()
     }
 }

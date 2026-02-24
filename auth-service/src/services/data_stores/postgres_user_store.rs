@@ -2,6 +2,7 @@ use crate::domain::data_stores::{UserStore, UserStoreError};
 use crate::domain::email::Email;
 use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
+use color_eyre::eyre::eyre;
 use sqlx::{Executor, PgPool};
 
 pub struct PostgresUserStore {
@@ -29,7 +30,7 @@ impl UserStore for PostgresUserStore {
         )
         .execute(&self.pool)
         .await
-        .map_err(|_| UserStoreError::UnexpectedError)?;
+        .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?;
 
         Ok(())
     }
@@ -49,8 +50,8 @@ impl UserStore for PostgresUserStore {
         .map_err(|_| UserStoreError::InvalidCredentials)?
         .map(|row| {
             Ok(User::new(
-                Email::parse(row.email).map_err(|_| UserStoreError::UnexpectedError)?,
-                HashedPassword::parse_password_hash(row.password_hash).map_err(|_| UserStoreError::UnexpectedError)?,
+                Email::parse(row.email).map_err(|e| UserStoreError::UnexpectedError(e.into()))?,
+                HashedPassword::parse_password_hash(row.password_hash).map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
                 row.requires_2fa,
             ))
         })

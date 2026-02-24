@@ -12,7 +12,8 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
+    init_tracing().expect("Failed to initialize tracing");
+    color_eyre::install().expect("Failed to install color_eyre");
 
     let redis_connection = get_redis_client(REDIS_HOST_NAME.to_owned()).expect("Couldn't get Redis connection");
     let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(

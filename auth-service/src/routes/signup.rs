@@ -8,9 +8,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use color_eyre::eyre::eyre;
 use serde::{Deserialize, Serialize};
 
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
@@ -30,7 +31,7 @@ pub async fn signup(
     user_store.add_user(user).await.map_err(|err| match err {
         UserStoreError::UserAlreadyExists => AuthAPIError::UserAlreadyExists,
         UserStoreError::InvalidCredentials => AuthAPIError::InvalidCredentials,
-        _ => AuthAPIError::UnexpectedError,
+        e => AuthAPIError::UnexpectedError(eyre!(e)),
     })?;
     let response = Json(SignupResponse {
         message: "User signed up successfully".into(),
