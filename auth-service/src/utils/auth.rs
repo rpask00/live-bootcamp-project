@@ -1,11 +1,11 @@
+use crate::domain::email::Email;
+use crate::utils::constants::env::JWT_COOKIE_NAME;
+use crate::utils::constants::JWT_SECRET;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
-
-use crate::domain::email::Email;
-use crate::utils::constants::env::JWT_COOKIE_NAME;
-use crate::utils::constants::JWT_SECRET;
+use thiserror::Error;
 
 // Create cookie with a new JWT auth token
 pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
@@ -24,9 +24,11 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
     cookie
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum GenerateTokenError {
+    #[error("Token error")]
     TokenError(jsonwebtoken::errors::Error),
+    #[error("Unexpected error")]
     UnexpectedError,
 }
 

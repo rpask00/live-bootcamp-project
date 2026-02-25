@@ -30,8 +30,9 @@ impl PartialEq for UserStoreError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Error)]
 pub enum BannedTokenStoreError {
+    #[error("Unexpected error")]
     UnexpectedError,
 }
 
@@ -61,9 +62,11 @@ pub trait TwoFACodeStore: Send + Sync {
     async fn get_code(&self, email: &Email) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Error)]
 pub enum TwoFACodeStoreError {
+    #[error("Login attempt Id not found")]
     LoginAttemptIdNotFound,
+    #[error("Unexpected error")]
     UnexpectedError,
 }
 

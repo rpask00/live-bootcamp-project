@@ -31,16 +31,16 @@ impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
         log_error_chain(&self);
 
-        let (status, error_message) = match self {
-            AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, String::from("User already exist.")),
-            AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, String::from("Invalid credentials.")),
-            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, String::from("Missing auth token")),
-            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, String::from("Invalid auth token")),
-            AuthAPIError::UnexpectedError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-            AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, String::from("Unauthorized.")),
+        let status = match &self {
+            AuthAPIError::UserAlreadyExists => StatusCode::CONFLICT,
+            AuthAPIError::InvalidCredentials => StatusCode::BAD_REQUEST,
+            AuthAPIError::MissingToken => StatusCode::BAD_REQUEST,
+            AuthAPIError::InvalidToken => StatusCode::UNAUTHORIZED,
+            AuthAPIError::UnexpectedError(e) => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthAPIError::IncorrectCredentials => StatusCode::UNAUTHORIZED,
         };
 
-        let body = Json(ErrorResponse { error: error_message });
+        let body = Json(ErrorResponse { error: self.to_string() });
 
         (status, body).into_response()
     }

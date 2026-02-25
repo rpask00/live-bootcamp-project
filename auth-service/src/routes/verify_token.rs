@@ -7,6 +7,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use axum_extra::extract::cookie::Cookie;
+use color_eyre::eyre::eyre;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -30,7 +31,7 @@ pub async fn verify_token(
         .await
         .contains_token(jwt.value().as_ref())
         .await
-        .map_err(|_| AuthAPIError::UnexpectedError)?;
+        .map_err(|e| AuthAPIError::UnexpectedError(eyre!(e)))?;
 
     if is_token_banned {
         return Ok(StatusCode::UNAUTHORIZED.into_response());

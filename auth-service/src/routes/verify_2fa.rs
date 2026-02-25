@@ -7,6 +7,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use axum_extra::extract::CookieJar;
+use color_eyre::eyre::eyre;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -23,10 +24,7 @@ pub async fn verify_2fa(
     jar: CookieJar,
     Json(request): Json<Verify2FARequest>,
 ) -> (CookieJar, Result<(StatusCode, Json<LoginResponse>), AuthAPIError>) {
-    println!(
-        "{}, {}, {}",
-        request.email, request.two_fa_code, request.login_attempt_id
-    );
+    println!("{}, {}, {}", request.email, request.two_fa_code, request.login_attempt_id);
 
     let email = match Email::parse(request.email) {
         Ok(email) => email,
@@ -56,8 +54,8 @@ pub async fn verify_2fa(
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    if state.two_fa_code_store.write().await.remove_code(&email).await.is_err() {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+    if let Err(e) = state.two_fa_code_store.write().await.remove_code(&email).await {
+        return (jar, Err(AuthAPIError::UnexpectedError(eyre!(e))));
     }
 
     handle_no_2fa(&email, jar).await
