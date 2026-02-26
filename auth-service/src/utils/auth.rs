@@ -8,6 +8,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
 // Create cookie with a new JWT auth token
+#[tracing::instrument(name = "Generate auth Cookie", skip_all)]
 pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>> {
     let jwt = generate_auth_token(email)?;
     Ok(create_auth_cookie(jwt))
@@ -28,6 +29,7 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
 pub const TOKEN_TTL_SECONDS: i64 = 600; // 10 minutes
 
 // Create JWT auth token
+#[tracing::instrument(name = "Generate JWT Token", skip_all)]
 fn generate_auth_token(email: &Email) -> Result<String> {
     let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS).wrap_err("Failed to create time delta")?;
 
@@ -48,6 +50,7 @@ fn generate_auth_token(email: &Email) -> Result<String> {
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
+#[tracing::instrument(name = "Validate JWT Token", skip_all)]
 pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     decode::<Claims>(
         token,
@@ -58,6 +61,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors:
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
+#[tracing::instrument(name = "Create JWT Token", skip_all)]
 fn create_token(claims: &Claims) -> Result<String> {
     encode(
         &jsonwebtoken::Header::default(),
