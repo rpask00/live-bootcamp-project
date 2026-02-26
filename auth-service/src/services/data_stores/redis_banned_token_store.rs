@@ -2,6 +2,7 @@ use crate::{
     domain::data_stores::{BannedTokenStore, BannedTokenStoreError},
     utils::auth::TOKEN_TTL_SECONDS,
 };
+use color_eyre::eyre::Context;
 use redis::{Commands, Connection};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -27,7 +28,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
         // 2. Call the set_ex command on the Redis connection to set a new key/value pair with an expiration time (TTL).
         let ttl: u64 = TOKEN_TTL_SECONDS
             .try_into()
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+            .wrap_err("Failed to cast i64 into u64")
+            .map_err(BannedTokenStoreError::UnexpectedError)?;
 
         // The value should simply be a `true` (boolean value).
         let _: () = self
@@ -35,7 +37,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
             .write()
             .await
             .set_ex(key, true, ttl)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+            .wrap_err("Failed to set key in Store")
+            .map_err(BannedTokenStoreError::UnexpectedError)?;
         // The expiration time should be set to TOKEN_TTL_SECONDS.
         // NOTE: The TTL is expected to be a u64 so you will have to cast TOKEN_TTL_SECONDS to a u64.
         // Return BannedTokenStoreError::UnexpectedError if casting fails or the call to set_ex fails.
@@ -51,7 +54,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
             .write()
             .await
             .exists::<String, bool>(key)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)
+            .wrap_err("Failed read from the Store to check if value for key exists")
+            .map_err(BannedTokenStoreError::UnexpectedError)
     }
 }
 

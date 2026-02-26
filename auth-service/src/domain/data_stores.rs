@@ -1,6 +1,6 @@
 use crate::domain::email::Email;
 use crate::domain::user::User;
-use color_eyre::Report;
+use color_eyre::eyre::{eyre, Report, Result};
 use rand::{rng, Rng};
 use serde::Deserialize;
 use thiserror::Error;
@@ -30,10 +30,16 @@ impl PartialEq for UserStoreError {
     }
 }
 
-#[derive(Debug, PartialEq, Error)]
+#[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
     #[error("Unexpected error")]
-    UnexpectedError,
+    UnexpectedError(#[source] Report),
+}
+
+impl PartialEq for BannedTokenStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!((self, other), (Self::UnexpectedError(_), Self::UnexpectedError(_)))
+    }
 }
 
 #[async_trait::async_trait]
@@ -62,23 +68,31 @@ pub trait TwoFACodeStore: Send + Sync {
     async fn get_code(&self, email: &Email) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
 }
 
-#[derive(Debug, PartialEq, Error)]
+#[derive(Debug, Error)]
 pub enum TwoFACodeStoreError {
     #[error("Login attempt Id not found")]
     LoginAttemptIdNotFound,
     #[error("Unexpected error")]
-    UnexpectedError,
+    UnexpectedError(#[source] Report),
 }
 
+impl PartialEq for TwoFACodeStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound) | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
+    }
+}
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
+    pub fn parse(id: String) -> Result<Self> {
         // Use the `parse_str` function from the `uuid` crate to ensure `id` is a valid UUID
         match Uuid::parse_str(id.as_str()) {
             Ok(_uuid) => Ok(LoginAttemptId(_uuid.to_string())),
-            Err(_) => Err("Failed to parse id".to_string()),
+            Err(_) => Err(eyre!("Failed to parse id")),
         }
     }
 }
@@ -101,11 +115,10 @@ impl AsRef<str> for LoginAttemptId {
 pub struct TwoFACode(String);
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self, String> {
-        // Ensure `code` is a valid 6-digit code
+    pub fn parse(code: String) -> color_eyre::eyre::Result<Self> {
         match code.len() {
             6 => Ok(TwoFACode(code)),
-            _ => Err("Code is invalid".to_string()),
+            _ => Err(eyre!("Code is invalid")),
         }
     }
 }

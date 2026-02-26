@@ -1,5 +1,6 @@
 use crate::domain::data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError};
 use crate::domain::email::Email;
+use color_eyre::eyre::eyre;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -24,7 +25,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
         if self.two_fa_store.contains_key(email) {
             self.two_fa_store.remove(email);
         } else {
-            return Err(TwoFACodeStoreError::UnexpectedError);
+            return Err(TwoFACodeStoreError::UnexpectedError(eyre!("Code not found for given email!")));
         }
 
         Ok(())

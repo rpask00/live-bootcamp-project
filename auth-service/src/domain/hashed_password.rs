@@ -37,23 +37,12 @@ impl HashedPassword {
         }
     }
 
-    // TODO:
-    // Add a verify_raw_password function.
-    // To verify the password candidate use
-    // Argon2::default().verify_password.
-    #[tracing::instrument(name = "Verify raw password", skip_all)] // New!
+    #[tracing::instrument(name = "Verify raw password", skip_all)]
     pub async fn verify_raw_password(&self, password_candidate: &str) -> Result<()> {
         let current_span = tracing::Span::current();
 
         let password_hash = self.as_ref().to_owned();
         let password_candidate = password_candidate.to_owned();
-
-        // TODO:
-        // To avoid blocking other async tasks, update this function to
-        // perform hashing on a separate thread pool using
-        // tokio::task::spawn_blocking.
-        // Return Result<(), Box<dyn Error + Send + Sync>>.
-        // Every HashedPassword instance can verify a password_candidate.
 
         tokio::task::spawn_blocking(move || {
             current_span.in_scope(|| {

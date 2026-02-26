@@ -3,12 +3,12 @@ use crate::utils::constants::env::JWT_COOKIE_NAME;
 use crate::utils::constants::JWT_SECRET;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
+use color_eyre::eyre::{Context, ContextCompat, Result};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 // Create cookie with a new JWT auth token
-pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
+pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>> {
     let jwt = generate_auth_token(email)?;
     Ok(create_auth_cookie(jwt))
 }
@@ -24,35 +24,27 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
     cookie
 }
 
-#[derive(Debug, Error)]
-pub enum GenerateTokenError {
-    #[error("Token error")]
-    TokenError(jsonwebtoken::errors::Error),
-    #[error("Unexpected error")]
-    UnexpectedError,
-}
-
 // This value determines how long the JWT auth token is valid for
 pub const TOKEN_TTL_SECONDS: i64 = 600; // 10 minutes
 
 // Create JWT auth token
-fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
-    let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS).ok_or(GenerateTokenError::UnexpectedError)?;
+fn generate_auth_token(email: &Email) -> Result<String> {
+    let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS).wrap_err("Failed to create time delta")?;
 
     // Create JWT expiration time
     let exp = Utc::now()
         .checked_add_signed(delta)
-        .ok_or(GenerateTokenError::UnexpectedError)?
+        .wrap_err("Failed to create JWT expiration time")?
         .timestamp();
 
     // Cast exp to a usize, which is what Claims expects
-    let exp: usize = exp.try_into().map_err(|_| GenerateTokenError::UnexpectedError)?;
+    let exp: usize = exp.try_into().wrap_err("Failed to cast exp into usize")?;
 
     let sub = email.as_ref().to_owned();
 
     let claims = Claims { sub, exp };
 
-    create_token(&claims).map_err(GenerateTokenError::TokenError)
+    create_token(&claims)
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
@@ -66,12 +58,13 @@ pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors:
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
-fn create_token(claims: &Claims) -> Result<String, jsonwebtoken::errors::Error> {
+fn create_token(claims: &Claims) -> Result<String> {
     encode(
         &jsonwebtoken::Header::default(),
         &claims,
         &EncodingKey::from_secret(JWT_SECRET.as_bytes()),
     )
+    .wrap_err("Failed to create token")
 }
 
 #[derive(Debug, Serialize, Deserialize)]
