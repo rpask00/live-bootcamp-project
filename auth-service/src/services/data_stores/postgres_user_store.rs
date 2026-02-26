@@ -3,6 +3,7 @@ use crate::domain::email::Email;
 use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use color_eyre::eyre::eyre;
+use secrecy::ExposeSecret;
 use sqlx::{Executor, PgPool};
 
 pub struct PostgresUserStore {
@@ -25,7 +26,7 @@ impl UserStore for PostgresUserStore {
             VALUES ($1, $2, $3)
             "#,
             user.email.as_ref(),
-            &user.password.as_ref(),
+            &user.password.0.expose_secret(),
             user.requires_2fa
         )
         .execute(&self.pool)
@@ -51,7 +52,8 @@ impl UserStore for PostgresUserStore {
         .map(|row| {
             Ok(User::new(
                 Email::parse(row.email).map_err(|e| UserStoreError::UnexpectedError(e.into()))?,
-                HashedPassword::parse_password_hash(row.password_hash).map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
+                HashedPassword::parse_password_hash(row.password_hash.into())
+                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
                 row.requires_2fa,
             ))
         })

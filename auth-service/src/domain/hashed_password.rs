@@ -2,20 +2,20 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
 };
-use color_eyre::eyre::{eyre, Context, Result};
-use std::error::Error;
-use std::future::Future;
+use color_eyre::eyre::{eyre, Result};
+use secrecy::{ExposeSecret, SecretString};
+#[derive(Debug, Clone)]
+pub struct HashedPassword(pub(crate) SecretString);
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct HashedPassword(String);
+impl PartialEq for HashedPassword {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret() // Updated!
+    }
+}
 
 impl HashedPassword {
-    // TODO:
-    // Update the parse function. Note that it's now async.
-    // After password validation, hash the password.
-    // Using the provided helper function compute_password_hash.
-    pub async fn parse(s: String) -> Result<Self> {
-        if s.len() < 8 {
+    pub async fn parse(s: SecretString) -> Result<Self> {
+        if s.expose_secret().len() < 8 {
             return Err(eyre!("Password is to short"));
         }
 
@@ -25,13 +25,9 @@ impl HashedPassword {
         }
     }
 
-    // TODO:
-    // Add a parse_password_hash function.
-    // To validate the format of the hash string,
-    // use PasswordHash::new
-    pub fn parse_password_hash(hash: String) -> Result<HashedPassword, String> {
-        if let Ok(hashed_string) = PasswordHash::new(hash.as_ref()) {
-            Ok(Self(hashed_string.to_string()))
+    pub fn parse_password_hash(hash: SecretString) -> Result<HashedPassword, String> {
+        if let Ok(hashed_string) = PasswordHash::new(hash.expose_secret().as_ref()) {
+            Ok(Self(SecretString::from(hashed_string.to_string())))
         } else {
             Err(String::from("twoja stara"))
         }
@@ -46,7 +42,7 @@ impl HashedPassword {
 
         tokio::task::spawn_blocking(move || {
             current_span.in_scope(|| {
-                let expected_password_hash: PasswordHash<'_> = PasswordHash::new(&password_hash)?;
+                let expected_password_hash: PasswordHash<'_> = PasswordHash::new(&password_hash.expose_secret())?;
                 return Argon2::default()
                     .verify_password(password_candidate.as_bytes(), &expected_password_hash)
                     .map_err(|e| e.into());
@@ -56,33 +52,27 @@ impl HashedPassword {
     }
 }
 
-//..
-
-// Helper function to hash passwords before persisting them in storage.
-// TODO:
-// Hashing is a CPU-intensive operation. To avoid blocking
-// other async tasks, update this function to perform hashing on a
-// separate thread pool using tokio::task::spawn_blocking.
-#[tracing::instrument(name = "Computing password hash", skip_all)] //New!
-async fn compute_password_hash(password: String) -> Result<String> {
+#[tracing::instrument(name = "Computing password hash", skip_all)]
+async fn compute_password_hash(password: SecretString) -> Result<SecretString> {
     let current_span = tracing::Span::current();
 
     tokio::task::spawn_blocking(move || {
         current_span.in_scope(|| {
             let salt: SaltString = SaltString::generate(&mut OsRng);
             let password_hash = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::new(15000, 2, 1, None)?)
-                .hash_password(password.as_bytes(), &salt)?
+                .hash_password(password.expose_secret().as_bytes(), &salt)?
                 .to_string();
 
-            Ok(password_hash)
+            let bs = password_hash.into_boxed_str();
+            Ok(SecretString::new(bs))
         })
     })
     .await?
 }
 
-impl AsRef<str> for HashedPassword {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
+impl AsRef<SecretString> for HashedPassword {
+    fn as_ref(&self) -> &SecretString {
+        &self.0
     }
 }
 
@@ -103,17 +93,18 @@ mod tests {
     use fake::Fake;
     use quickcheck::Gen;
     use rand::SeedableRng;
+    use secrecy::{ExposeSecret, SecretString};
 
     #[tokio::test]
     async fn empty_string_is_rejected() {
-        let password = "".to_owned();
+        let password = SecretString::from("");
 
         assert!(HashedPassword::parse(password).await.is_err());
     }
 
     #[tokio::test]
     async fn string_less_than_8_characters_is_rejected() {
-        let password = "1234567".to_owned();
+        let password = SecretString::from("1234567");
 
         assert!(HashedPassword::parse(password).await.is_err());
     }
@@ -128,12 +119,10 @@ mod tests {
 
         let hash_string = argon2.hash_password(raw_password.as_bytes(), &salt).unwrap().to_string();
 
-        // Act
-        let hash_password = HashedPassword::parse_password_hash(hash_string.clone()).unwrap();
+        let hash_password = HashedPassword::parse_password_hash(SecretString::from(hash_string.clone())).unwrap();
 
-        // Assert
-        assert_eq!(hash_password.as_ref(), hash_string.as_str());
-        assert!(hash_password.as_ref().starts_with("$argon2id$v=19$"));
+        assert_eq!(hash_password.0.expose_secret(), hash_string.to_string());
+        assert!(hash_password.0.expose_secret().starts_with("$argon2id$v=19$"));
     }
 
     // new
@@ -145,16 +134,14 @@ mod tests {
 
         let hash_string = argon2.hash_password(raw_password.as_bytes(), &salt).unwrap().to_string();
 
-        let hash_password = HashedPassword::parse_password_hash(hash_string.clone()).unwrap();
+        let hash_password = HashedPassword::parse_password_hash(SecretString::from(hash_string.clone())).unwrap();
 
-        assert_eq!(hash_password.as_ref(), hash_string.as_str());
-        assert!(hash_password.as_ref().starts_with("$argon2id$v=19$"));
+        assert_eq!(hash_password.0.expose_secret(), hash_string.as_str());
+        assert!(hash_password.0.expose_secret().starts_with("$argon2id$v=19$"));
 
-        // TODO: Use verify_raw_password to verify the password match
         let result = hash_password.verify_raw_password(&raw_password).await;
         assert!(!result.is_err());
 
-        // TODO: Assert the verification succeeds assert_eq!(result, ())
         assert_eq!(result.unwrap(), ())
     }
 
@@ -173,6 +160,6 @@ mod tests {
     #[tokio::test]
     #[quickcheck_macros::quickcheck]
     async fn valid_passwords_are_parsed_successfully(valid_password: ValidPasswordFixture) -> bool {
-        HashedPassword::parse(valid_password.0).await.is_ok()
+        HashedPassword::parse(SecretString::from(valid_password.0)).await.is_ok()
     }
 }

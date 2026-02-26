@@ -17,7 +17,7 @@ pub async fn signup(
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
     let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let password = HashedPassword::parse(request.password)
+    let password = HashedPassword::parse(request.password.into())
         .await
         .map_err(|_| AuthAPIError::InvalidCredentials)?;
 
