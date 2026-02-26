@@ -8,6 +8,7 @@ use axum::response::IntoResponse;
 use axum_extra::extract::{cookie, CookieJar};
 use color_eyre::eyre::eyre;
 
+#[tracing::instrument(name = "Logout", skip_all)]
 pub async fn logout(jar: CookieJar, State(state): State<AppState>) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let jwt = match jar.get("jwt") {
         None => return (jar, Err(AuthAPIError::InvalidCredentials)),

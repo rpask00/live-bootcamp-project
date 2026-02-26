@@ -19,13 +19,12 @@ pub struct Verify2FARequest {
     two_fa_code: String,
 }
 
+#[tracing::instrument(name = "Verify 2FA Code", skip_all)]
 pub async fn verify_2fa(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(request): Json<Verify2FARequest>,
 ) -> (CookieJar, Result<(StatusCode, Json<LoginResponse>), AuthAPIError>) {
-    println!("{}, {}, {}", request.email, request.two_fa_code, request.login_attempt_id);
-
     let email = match Email::parse(request.email) {
         Ok(email) => email,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
