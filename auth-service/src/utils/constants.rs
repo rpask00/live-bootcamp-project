@@ -1,10 +1,11 @@
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use secrecy::SecretString;
 
 pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
 
 lazy_static! {
-    pub static ref JWT_SECRET: String = get_jwt_secret_token();
+    pub static ref JWT_SECRET: SecretString = get_jwt_secret_token();
     pub static ref REDIS_HOST_NAME: String = set_redis_host();
 }
 
@@ -28,7 +29,7 @@ fn set_redis_host() -> String {
     std::env::var(env::REDIS_HOST_NAME_ENV_VAR).unwrap_or(DEFAULT_REDIS_HOSTNAME.to_owned())
 }
 
-fn get_jwt_secret_token() -> String {
+fn get_jwt_secret_token() -> SecretString {
     dotenv().ok();
     let jwt_secret = std::env::var(env::JWT_SECRET_NAME).expect("JWT_SECRET must be set");
 
@@ -36,5 +37,5 @@ fn get_jwt_secret_token() -> String {
         panic!("JWT_SECRET cannot be empty");
     }
 
-    jwt_secret
+    jwt_secret.into()
 }

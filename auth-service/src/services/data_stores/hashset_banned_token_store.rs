@@ -1,4 +1,5 @@
 use crate::domain::data_stores::{BannedTokenStore, BannedTokenStoreError};
+use secrecy::{ExposeSecret, SecretString};
 use std::collections::HashSet;
 
 #[derive(Default)]
@@ -8,8 +9,8 @@ pub struct HashsetBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        self.banned_tokens.insert(token);
+    async fn add_token(&mut self, token: SecretString) -> Result<(), BannedTokenStoreError> {
+        self.banned_tokens.insert(token.expose_secret().to_owned());
 
         Ok(())
     }
@@ -30,10 +31,7 @@ mod tests {
     async fn test_ban_token() {
         let mut store = HashsetBannedTokenStore::default();
         let jwt = generate_auth_cookie(&Email::parse("test@test.pl".to_string()).unwrap()).unwrap();
-        store
-            .add_token(jwt.value().to_string())
-            .await
-            .expect("Failed to s add token.");
+        store.add_token(jwt.value().into()).await.expect("Failed to s add token.");
 
         let is_banned = store.contains_token(jwt.value().as_ref()).await.unwrap();
 

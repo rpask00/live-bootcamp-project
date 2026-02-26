@@ -20,7 +20,7 @@ async fn main() {
         redis_connection.get_connection().unwrap(),
     )));
 
-    let poll = get_postgres_pool(std::env::var(DATABASE_URL_NAME).unwrap().as_str())
+    let poll = get_postgres_pool(std::env::var(DATABASE_URL_NAME).unwrap().into())
         .await
         .expect("Failed to create Postgres poll");
 

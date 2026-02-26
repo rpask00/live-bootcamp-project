@@ -19,13 +19,7 @@ pub async fn logout(jar: CookieJar, State(state): State<AppState>) -> (CookieJar
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    if let Err(e) = state
-        .banned_token_store
-        .write()
-        .await
-        .add_token(jwt.value().to_string())
-        .await
-    {
+    if let Err(e) = state.banned_token_store.write().await.add_token(jwt.value().into()).await {
         return (jar, Err(AuthAPIError::UnexpectedError(eyre!(e))));
     }
 

@@ -2,6 +2,7 @@ use crate::domain::email::Email;
 use crate::domain::user::User;
 use color_eyre::eyre::{eyre, Report, Result};
 use rand::{rng, Rng};
+use secrecy::SecretString;
 use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
@@ -51,7 +52,7 @@ pub trait UserStore: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait BannedTokenStore: Send + Sync {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn add_token(&mut self, token: SecretString) -> Result<(), BannedTokenStoreError>;
     async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
 
