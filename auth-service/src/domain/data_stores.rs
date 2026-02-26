@@ -2,7 +2,7 @@ use crate::domain::email::Email;
 use crate::domain::user::User;
 use color_eyre::eyre::{eyre, Report, Result};
 use rand::{rng, Rng};
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
@@ -85,14 +85,20 @@ impl PartialEq for TwoFACodeStoreError {
         )
     }
 }
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct LoginAttemptId(String);
+#[derive(Debug, Clone, Deserialize)]
+pub struct LoginAttemptId(pub(crate) SecretString);
+
+impl PartialEq for LoginAttemptId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
 
 impl LoginAttemptId {
     pub fn parse(id: String) -> Result<Self> {
         // Use the `parse_str` function from the `uuid` crate to ensure `id` is a valid UUID
         match Uuid::parse_str(id.as_str()) {
-            Ok(_uuid) => Ok(LoginAttemptId(_uuid.to_string())),
+            Ok(_uuid) => Ok(LoginAttemptId(_uuid.to_string().into())),
             Err(_) => Err(eyre!("Failed to parse id")),
         }
     }
@@ -101,14 +107,13 @@ impl LoginAttemptId {
 impl Default for LoginAttemptId {
     fn default() -> Self {
         // Use the `uuid` crate to generate a random version 4 UUID
-        LoginAttemptId(Uuid::new_v4().to_string())
+        LoginAttemptId(Uuid::new_v4().to_string().into())
     }
 }
 
-// TODO: Implement AsRef<str> for LoginAttemptId
-impl AsRef<str> for LoginAttemptId {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
+impl AsRef<SecretString> for LoginAttemptId {
+    fn as_ref(&self) -> &SecretString {
+        &self.0
     }
 }
 

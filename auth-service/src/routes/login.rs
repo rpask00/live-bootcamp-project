@@ -113,7 +113,7 @@ async fn handle_2fa(
             StatusCode::PARTIAL_CONTENT,
             Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
                 message: "2FA required".to_string(),
-                login_attempt_id: login_attempt_id.as_ref().to_string(),
+                login_attempt_id: login_attempt_id.0.expose_secret().to_string(),
             })),
         )),
     )
