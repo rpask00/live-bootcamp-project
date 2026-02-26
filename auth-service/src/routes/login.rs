@@ -9,12 +9,13 @@ use axum::response::IntoResponse;
 use axum::Json;
 use axum_extra::extract::CookieJar;
 use color_eyre::eyre::eyre;
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct LoginRequest {
-    email: String,
-    password: String,
+    email: SecretString,
+    password: SecretString,
 }
 
 // The login route can return 2 possible success responses.
@@ -40,13 +41,17 @@ pub async fn login(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = match Email::parse(request.email) {
+    let email = match Email::parse(request.email.expose_secret().into()) {
         Ok(email) => email,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
     let user_store = state.user_store.read().await;
-    if user_store.validate_user(&email, &request.password).await.is_err() {
+    if user_store
+        .validate_user(&email, &request.password.expose_secret())
+        .await
+        .is_err()
+    {
         return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
