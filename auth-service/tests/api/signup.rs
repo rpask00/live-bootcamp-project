@@ -67,30 +67,29 @@ async fn should_return_201_if_valid_input() {
     app.clean_up().await;
 }
 
-#[tokio::test]
-async fn should_return_400_if_invalid_input() {
-    return;
-    let mut app = TestApp::new().await;
-
-    let test_case = serde_json::json!({
-        "password":"password123",
-        "requires2FA":true,
-        "email": "invalid_email"
-    });
-
-    let response = app.post_signup(&test_case).await;
-    assert_eq!(response.status().as_u16(), 201);
-
-    let response = app.post_signup(&test_case).await;
-    assert_eq!(
-        response
-            .json::<ErrorResponse>()
-            .await
-            .expect("Could not deserialize response body to ErrorResponse")
-            .error,
-        "Invalid credentials.".to_owned()
-    );
-}
+// #[tokio::test]
+// async fn should_return_400_if_invalid_input() {
+//     let mut app = TestApp::new().await;
+//
+//     let test_case = serde_json::json!({
+//         "password":"password123",
+//         "requires2FA":true,
+//         "email": "invalid_email"
+//     });
+//
+//     let response = app.post_signup(&test_case).await;
+//     assert_eq!(response.status().as_u16(), 201);
+//
+//     let response = app.post_signup(&test_case).await;
+//     assert_eq!(
+//         response
+//             .json::<ErrorResponse>()
+//             .await
+//             .expect("Could not deserialize response body to ErrorResponse")
+//             .error,
+//         "Invalid credentials.".to_owned()
+//     );
+// }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_properties() {

@@ -20,6 +20,7 @@ pub struct TestApp {
     pub cookie_jar: Arc<Jar>,
     pub banned_token_store: BannedTokenStoreType,
     pub two_fa_code_store: TwoFACodeStoreType,
+    #[allow(dead_code)]
     pub email_client: EmailClientType,
     pub db_name: String,
     cleaned_up: bool,
@@ -76,6 +77,7 @@ impl TestApp {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn get_root(&self) -> reqwest::Response {
         self.http_client
             .get(&format!("{}/", &self.address))
