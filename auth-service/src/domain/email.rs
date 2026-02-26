@@ -1,9 +1,23 @@
-use serde::Deserialize;
+use secrecy::{ExposeSecret, SecretString};
+use std::hash::Hash;
 use validator::ValidationError;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Deserialize)]
-pub struct Email(String);
+#[derive(Debug, Clone)]
+pub struct Email(pub(crate) SecretString);
 
+impl PartialEq for Email {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
+
+impl Hash for Email {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.expose_secret().hash(state);
+    }
+}
+
+impl Eq for Email {}
 impl Email {
     pub fn parse(value: String) -> Result<Email, ValidationError> {
         if !value.contains('@') {
@@ -14,7 +28,7 @@ impl Email {
             return Err(ValidationError::new("Invalid email format - missing subject."));
         }
 
-        Ok(Email(value))
+        Ok(Email(value.into()))
     }
 }
 
@@ -25,8 +39,8 @@ impl TryFrom<&str> for Email {
     }
 }
 
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
+impl AsRef<SecretString> for Email {
+    fn as_ref(&self) -> &SecretString {
         &self.0
     }
 }

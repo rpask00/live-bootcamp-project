@@ -5,6 +5,7 @@ use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use color_eyre::eyre::{Context, ContextCompat, Result};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
+use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 // Create cookie with a new JWT auth token
@@ -42,7 +43,7 @@ fn generate_auth_token(email: &Email) -> Result<String> {
     // Cast exp to a usize, which is what Claims expects
     let exp: usize = exp.try_into().wrap_err("Failed to cast exp into usize")?;
 
-    let sub = email.as_ref().to_owned();
+    let sub = email.0.expose_secret().to_owned();
 
     let claims = Claims { sub, exp };
 

@@ -25,7 +25,7 @@ impl UserStore for PostgresUserStore {
             INSERT INTO users (email, password_hash, requires_2fa)
             VALUES ($1, $2, $3)
             "#,
-            user.email.as_ref(),
+            user.email.0.expose_secret(),
             &user.password.0.expose_secret(),
             user.requires_2fa
         )
@@ -44,7 +44,7 @@ impl UserStore for PostgresUserStore {
                 FROM users
                 WHERE email = $1
             "#,
-            email.as_ref()
+            email.0.expose_secret()
         )
         .fetch_optional(&self.pool)
         .await
