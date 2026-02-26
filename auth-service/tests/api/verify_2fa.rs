@@ -53,7 +53,7 @@ async fn should_return_400_if_invalid_input() {
                 .await
                 .expect("Could not deserialize response body to ErrorResponse")
                 .error,
-            "Invalid credentials.".to_owned()
+            "Invalid credentials".to_owned()
         );
     }
     app.clean_up().await;

@@ -137,7 +137,7 @@ async fn should_return_409_if_email_is_used() {
             .await
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
-        "User already exist.".to_owned()
+        "User already exists".to_owned()
     );
     app.clean_up().await;
 }
