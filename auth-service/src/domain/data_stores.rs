@@ -117,13 +117,19 @@ impl AsRef<SecretString> for LoginAttemptId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct TwoFACode(String);
+#[derive(Clone, Debug, Deserialize)]
+pub struct TwoFACode(pub(crate) SecretString);
+
+impl PartialEq for TwoFACode {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
 
 impl TwoFACode {
-    pub fn parse(code: String) -> color_eyre::eyre::Result<Self> {
+    pub fn parse(code: String) -> Result<Self> {
         match code.len() {
-            6 => Ok(TwoFACode(code)),
+            6 => Ok(TwoFACode(code.into())),
             _ => Err(eyre!("Code is invalid")),
         }
     }
@@ -131,16 +137,12 @@ impl TwoFACode {
 
 impl Default for TwoFACode {
     fn default() -> Self {
-        // Use the `rand` crate to generate a random 2FA code.
-        // The code should be 6 digits (ex: 834629)
-        TwoFACode(rng().random_range(100_000..=999_999).to_string())
+        TwoFACode(rng().random_range(100_000..=999_999).to_string().into())
     }
 }
 
-// TODO: Implement AsRef<str> for TwoFACode
-
-impl AsRef<str> for TwoFACode {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
+impl AsRef<SecretString> for TwoFACode {
+    fn as_ref(&self) -> &SecretString {
+        &self.0
     }
 }

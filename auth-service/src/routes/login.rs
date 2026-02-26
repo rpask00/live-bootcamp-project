@@ -100,7 +100,7 @@ async fn handle_2fa(
         .send_email(
             email,
             "Login attempt",
-            format!("Your 2FA code: {}", two_fa_code.as_ref()).as_str(),
+            format!("Your 2FA code: {}", two_fa_code.0.expose_secret()).as_str(),
         )
         .await
     {
