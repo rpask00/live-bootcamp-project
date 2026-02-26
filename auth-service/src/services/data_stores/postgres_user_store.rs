@@ -4,7 +4,7 @@ use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use color_eyre::eyre::eyre;
 use secrecy::ExposeSecret;
-use sqlx::{Executor, PgPool};
+use sqlx::PgPool;
 
 pub struct PostgresUserStore {
     pool: PgPool,

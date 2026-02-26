@@ -40,6 +40,7 @@ async fn main() {
     app.run().await.expect("Failed to start app!");
 }
 
+#[allow(dead_code)]
 fn configure_redis() -> redis::Connection {
     get_redis_client(REDIS_HOST_NAME.to_owned())
         .expect("Failed to get Redis client")
