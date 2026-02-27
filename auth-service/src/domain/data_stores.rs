@@ -86,7 +86,7 @@ impl PartialEq for TwoFACodeStoreError {
     }
 }
 #[derive(Debug, Clone, Deserialize)]
-pub struct LoginAttemptId(pub(crate) SecretString);
+pub struct LoginAttemptId(pub SecretString);
 
 impl PartialEq for LoginAttemptId {
     fn eq(&self, other: &Self) -> bool {
@@ -118,7 +118,7 @@ impl AsRef<SecretString> for LoginAttemptId {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TwoFACode(pub(crate) SecretString);
+pub struct TwoFACode(pub SecretString);
 
 impl PartialEq for TwoFACode {
     fn eq(&self, other: &Self) -> bool {

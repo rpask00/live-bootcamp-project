@@ -4,6 +4,7 @@ use auth_service::domain::email::Email;
 use auth_service::domain::error::ErrorResponse;
 use auth_service::routes::TwoFactorAuthResponse;
 use axum::http::StatusCode;
+use secrecy::ExposeSecret;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -26,13 +27,25 @@ async fn should_return_400_if_invalid_input() {
     let mut app = TestApp::new().await;
 
     let random_email = TestApp::get_random_email();
-    let login_attempt_id = LoginAttemptId::default().as_ref().to_owned();
-    let two_fa_code = TwoFACode::default().as_ref().to_owned();
+    let login_attempt_id = LoginAttemptId::default();
+    let two_fa_code = TwoFACode::default();
 
     let test_cases = vec![
-        ("invalid_email", login_attempt_id.as_str(), two_fa_code.as_str()),
-        (random_email.as_str(), "invalid_login_attempt_id", two_fa_code.as_str()),
-        (random_email.as_str(), login_attempt_id.as_str(), "invalid_two_fa_code"),
+        (
+            "invalid_email",
+            login_attempt_id.0.expose_secret(),
+            two_fa_code.0.expose_secret(),
+        ),
+        (
+            random_email.as_str(),
+            "invalid_login_attempt_id",
+            two_fa_code.0.expose_secret(),
+        ),
+        (
+            random_email.as_str(),
+            login_attempt_id.0.expose_secret(),
+            "invalid_two_fa_code",
+        ),
         ("", "", ""),
     ];
 
@@ -86,10 +99,11 @@ async fn should_return_401_if_incorrect_credentials() {
         .await
         .expect("Could not deserialize response body to TwoFactorAuthResponse");
 
+    // let t = TwoFACode::default().0.expose_secret();
     let request_body = serde_json::json!({
         "email": random_email,
         "loginAttemptId": response.login_attempt_id.as_str(),
-        "2FACode": TwoFACode::default().as_ref()
+        "2FACode": TwoFACode::default().0.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -98,8 +112,8 @@ async fn should_return_401_if_incorrect_credentials() {
 
     let request_body = serde_json::json!({
         "email": random_email,
-        "loginAttemptId": LoginAttemptId::default().as_ref(),
-        "2FACode": TwoFACode::default().as_ref()
+        "loginAttemptId": LoginAttemptId::default().0.expose_secret(),
+        "2FACode": TwoFACode::default().0.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -140,8 +154,8 @@ async fn should_return_200_if_correct_code() {
 
     let request_body = serde_json::json!({
         "email": random_email,
-        "loginAttemptId": login_attempt_id.as_ref(),
-        "2FACode": two_fa_code.as_ref()
+        "loginAttemptId": login_attempt_id.0.expose_secret(),
+        "2FACode": two_fa_code.0.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -182,8 +196,8 @@ async fn should_return_401_if_same_code_twice() {
 
     let request_body = serde_json::json!({
         "email": random_email,
-        "loginAttemptId": login_attempt_id.as_ref(),
-        "2FACode": two_fa_code.as_ref()
+        "loginAttemptId": login_attempt_id.0.expose_secret(),
+        "2FACode": two_fa_code.0.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -191,8 +205,8 @@ async fn should_return_401_if_same_code_twice() {
     assert_eq!(response.status().as_u16(), 200);
     let request_body = serde_json::json!({
         "email": random_email,
-        "loginAttemptId": login_attempt_id.as_ref(),
-        "2FACode": two_fa_code.as_ref()
+        "loginAttemptId": login_attempt_id.0.expose_secret(),
+        "2FACode": two_fa_code.0.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -259,7 +273,7 @@ async fn should_return_401_if_old_code() {
     let request_body = serde_json::json!({
         "email": random_email,
         "loginAttemptId": login_attempt_id,
-        "2FACode": code
+        "2FACode": code.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;

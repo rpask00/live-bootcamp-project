@@ -174,7 +174,7 @@ async fn configure_postgresql() -> (PgPool, String) {
 
     // Create a new connection pool and return it
     (
-        get_postgres_pool(&postgresql_conn_url_with_db)
+        get_postgres_pool(postgresql_conn_url_with_db.into())
             .await
             .expect("Failed to create Postgres connection pool!"),
         db_name,
