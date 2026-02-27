@@ -22,7 +22,8 @@ async fn should_return_422_if_malformed_input() {
 async fn should_return_200_valid_token() {
     let mut app = TestApp::new().await;
 
-    let jwt = generate_auth_cookie(&Email::parse(TestApp::get_random_email()).unwrap()).expect("Failed to generate auth cookie");
+    let jwt =
+        generate_auth_cookie(&Email::parse(TestApp::get_random_email().into()).unwrap()).expect("Failed to generate auth cookie");
 
     let response = app
         .post_verify_token(&json!({
@@ -52,7 +53,8 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_401_if_banned_token() {
     let mut app = TestApp::new().await;
 
-    let jwt = generate_auth_cookie(&Email::parse(TestApp::get_random_email()).unwrap()).expect("Failed to generate auth cookie");
+    let jwt =
+        generate_auth_cookie(&Email::parse(TestApp::get_random_email().into()).unwrap()).expect("Failed to generate auth cookie");
 
     let response = app
         .post_verify_token(&json!({

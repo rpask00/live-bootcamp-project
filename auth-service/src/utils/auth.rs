@@ -84,7 +84,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_auth_cookie() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com".into()).unwrap();
         let jwt = generate_auth_cookie(&email).unwrap();
         assert_eq!(jwt.name(), JWT_COOKIE_NAME);
         assert_eq!(jwt.value().split('.').count(), 3);
@@ -105,14 +105,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_auth_token() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com".into()).unwrap();
         let jwt = generate_auth_token(&email).unwrap();
         assert_eq!(jwt.split('.').count(), 3);
     }
 
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com".into()).unwrap();
         let jwt = generate_auth_token(&email).unwrap();
         let result = validate_token(&jwt).await.unwrap();
         assert_eq!(result.sub, "test@example.com");

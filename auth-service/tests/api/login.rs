@@ -123,7 +123,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         app.two_fa_code_store
             .read()
             .await
-            .get_code(&Email::parse(random_email).unwrap())
+            .get_code(&Email::parse(random_email.into()).unwrap())
             .await
             .unwrap()
             .0,

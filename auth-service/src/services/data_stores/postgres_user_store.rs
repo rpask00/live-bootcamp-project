@@ -3,7 +3,7 @@ use crate::domain::email::Email;
 use crate::domain::hashed_password::HashedPassword;
 use crate::domain::user::User;
 use color_eyre::eyre::eyre;
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
 use sqlx::PgPool;
 
 pub struct PostgresUserStore {
@@ -51,7 +51,7 @@ impl UserStore for PostgresUserStore {
         .map_err(|_| UserStoreError::InvalidCredentials)?
         .map(|row| {
             Ok(User::new(
-                Email::parse(row.email).map_err(|e| UserStoreError::UnexpectedError(e.into()))?,
+                Email::parse(SecretString::from(row.email)).map_err(|e| UserStoreError::UnexpectedError(e.into()))?,
                 HashedPassword::parse_password_hash(row.password_hash.into())
                     .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
                 row.requires_2fa,

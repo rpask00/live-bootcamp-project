@@ -30,7 +30,7 @@ mod tests {
     #[tokio::test]
     async fn test_ban_token() {
         let mut store = HashsetBannedTokenStore::default();
-        let jwt = generate_auth_cookie(&Email::parse("test@test.pl".to_string()).unwrap()).unwrap();
+        let jwt = generate_auth_cookie(&Email::parse("test@test.pl".into()).unwrap()).unwrap();
         store.add_token(jwt.value().into()).await.expect("Failed to s add token.");
 
         let is_banned = store.contains_token(jwt.value().as_ref()).await.unwrap();

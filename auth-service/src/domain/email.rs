@@ -19,12 +19,12 @@ impl Hash for Email {
 
 impl Eq for Email {}
 impl Email {
-    pub fn parse(value: String) -> Result<Email, ValidationError> {
-        if !value.contains('@') {
+    pub fn parse(value: SecretString) -> Result<Email, ValidationError> {
+        if !value.expose_secret().contains('@') {
             return Err(ValidationError::new("Invalid email format - missing at symbol."));
         }
 
-        if value.starts_with('@') {
+        if value.expose_secret().starts_with('@') {
             return Err(ValidationError::new("Invalid email format - missing subject."));
         }
 
@@ -52,21 +52,22 @@ mod tests {
     use fake::Fake;
     use quickcheck::Gen;
     use rand::SeedableRng;
+    use secrecy::SecretString;
 
     #[test]
     fn empty_string_is_rejected() {
-        let email = "".to_string();
+        let email = SecretString::from("");
         assert!(Email::parse(email).is_err());
     }
 
     #[test]
     fn email_missing_at_symbol_is_rejected() {
-        let email = "test_test.com".to_string();
+        let email = SecretString::from("test_test.com");
         assert!(Email::parse(email).is_err());
     }
     #[test]
     fn email_missing_subject_is_rejected() {
-        let email = "@example.com".to_string();
+        let email = SecretString::from("@example.com");
         assert!(Email::parse(email).is_err());
     }
 
@@ -85,6 +86,6 @@ mod tests {
 
     #[quickcheck_macros::quickcheck]
     fn valid_email_should_pass(email: ValidEmailFixture) {
-        assert!(Email::parse(email.0).is_ok())
+        assert!(Email::parse(SecretString::from(email.0)).is_ok())
     }
 }

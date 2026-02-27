@@ -1,12 +1,14 @@
 use auth_service::app_state::AppState;
+use auth_service::domain::email::Email;
 use auth_service::services::data_stores::postgres_user_store::PostgresUserStore;
 use auth_service::services::data_stores::redis_banned_token_store::RedisBannedTokenStore;
 use auth_service::services::data_stores::redis_two_fa_code_store::RedisTwoFACodeStore;
-use auth_service::services::mock_email_client::MockEmailClient;
+use auth_service::services::postmark_email_client::PostmarkEmailClient;
 use auth_service::utils::constants::env::DATABASE_URL_NAME;
-use auth_service::utils::constants::{prod, REDIS_HOST_NAME};
+use auth_service::utils::constants::{prod, POSTMARK_AUTH_TOKEN, REDIS_HOST_NAME};
 use auth_service::utils::tracing::init_tracing;
 use auth_service::{get_postgres_pool, get_redis_client, Application};
+use reqwest::Client;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -29,7 +31,18 @@ async fn main() {
     let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(
         redis_connection.get_connection().unwrap(),
     )));
-    let email_client = Arc::new(RwLock::new(MockEmailClient::default()));
+
+    let http_client = Client::builder()
+        .timeout(prod::email_client::TIMEOUT)
+        .build()
+        .expect("Failed to build HTTP Client");
+
+    let email_client = Arc::new(RwLock::new(PostmarkEmailClient::new(
+        prod::email_client::BASE_URL.to_string(),
+        Email::parse(prod::email_client::SENDER.into()).expect("Failed to parse Sender email"),
+        POSTMARK_AUTH_TOKEN.to_owned(),
+        http_client,
+    )));
 
     let app_state = AppState::new(user_store, banned_token_store, two_fa_code_store, email_client);
 
